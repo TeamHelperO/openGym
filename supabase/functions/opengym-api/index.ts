@@ -37,7 +37,7 @@ const ALLOW_GUEST = on('ALLOW_GUEST', true)
 const FIRST_USER_ADMIN = on('FIRST_USER_ADMIN', true)
 const DEFAULT_LANG = env('DEFAULT_LANG', 'pt-BR')
 const CRON_SECRET = env('CRON_SECRET')
-const ORIGIN = env('ORIGIN', 'https://opengym.ch')
+const ORIGIN = env('ORIGIN', 'https://opengym-gules.vercel.app')
 const VAPID_SUBJECT = env('VAPID_SUBJECT', ORIGIN)
 const BUCKET = 'opengym-media'
 
