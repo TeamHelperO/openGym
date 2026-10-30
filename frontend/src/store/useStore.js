@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { api, setRemoteAuth } from '../lib/api.js'
+import { api, setRemoteAuth, setTokenSource } from '../lib/api.js'
+import { SUPA, API_BASE, takeRedirect, freshToken, pendingSignIn, signOut as supaSignOut } from '../lib/supa-auth.js'
 import { localTZ } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { registerCustom, healCustomEx } from '../lib/exercises.js'
@@ -1864,7 +1865,9 @@ export const useStore = create((set, get) => {
       if (!left.owed && !(await stashActive())) return { owed: true, count: 0, stashed: false }
       // The device is signed out either way. A request that did not get through leaves the cookie
       // behind, still valid, so the logout is owed until the server answers it (see boot).
-      try { await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { if (!MOBILE) logoutOwed(true) }
+      // A Supabase build ends its own session here; there is no cookie left behind to owe a logout for.
+      if (SUPA) await supaSignOut()
+      else { try { await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { if (!MOBILE) logoutOwed(true) } }
       await clearLocalSession()
       return left.owed ? owedResult(left, { stashed: true }) : { owed: false }
     },
@@ -1920,6 +1923,7 @@ export const useStore = create((set, get) => {
       if (left.owed && !force) return owedResult(left)
       await stopTimers()
       await api('/api/logout/all', { method: 'POST', body: '{}' })
+      if (SUPA) await supaSignOut()
       if (left.owed && !(await stashOwed())) return owedResult(left, { stashed: false })
       if (!left.owed && !(await stashActive())) return { owed: true, count: 0, stashed: false }
       await clearLocalSession()
@@ -1936,6 +1940,7 @@ export const useStore = create((set, get) => {
     async deleteAccount(name, proof = {}) {
       const uid = get().user?.id
       await api('/api/account/delete', { method: 'POST', body: JSON.stringify({ name, ...proof }) })
+      if (SUPA) await supaSignOut()
       await stopTimers()
       const all = await readStashes()
       const key = stashKey(serverBase(), uid)
@@ -2046,6 +2051,20 @@ export const useStore = create((set, get) => {
         get().setGuest(true)
         finishBoot()
         return
+      }
+      // A Supabase build: the API is the opengym-api Edge Function, reached with the Supabase Auth
+      // token (lib/supa-auth.js), the way a paired phone reaches its server. A session an e-mail
+      // link just brought back is finished on the sign-in screen (Login.jsx), which asks what
+      // becomes of this device's data as a sign-in there does.
+      if (SUPA) {
+        takeRedirect()
+        setRemoteAuth(API_BASE, null)
+        setTokenSource(freshToken)
+        if (pendingSignIn()) {
+          await get().loadConfig()
+          finishBoot()
+          return
+        }
       }
       // Opened from a device-link QR code (#95): the code comes off the address at once — a reload,
       // a bookmark or a shared screenshot of the address bar must not carry it around — and waits

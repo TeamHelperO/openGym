@@ -9,6 +9,7 @@ import { accentValue, applyAccent } from './lib/accent.js'
 import { seasonAccent } from './lib/seasonal.js'
 import { setLang, useLang, baseLang } from './lib/i18n.js'
 import { effectiveLang } from './lib/default-lang.js'
+import { useRecoveryPrompt } from './components/SupaAuth.jsx'
 import { setPlayOnSilent, setVibrate, setAlarmBuzzer, setNativeBuzzer } from './lib/sound.js'
 import { buzzAsAlarm } from './lib/rest-alert.js'
 import { setNav, notePath, keyBefore, navToWorkout } from './lib/nav.js'
@@ -111,6 +112,7 @@ function Shell() {
   const loc = useLocation()
   const navType = useNavigationType()
   const { S, user, ready } = useStore()
+  useRecoveryPrompt()   // a Supabase build back from a password-reset link (components/SupaAuth.jsx)
   // iOS: whether timer sounds get past the ring/silent switch (Settings → Sounds). Page-level,
   // so it is applied here on load and on change rather than at each beep.
   useEffect(() => { setPlayOnSilent(!!S.soundOnSilent) }, [S.soundOnSilent])

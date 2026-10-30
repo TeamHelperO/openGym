@@ -22,6 +22,12 @@ export const webauthnOK = () => typeof window.PublicKeyCredential !== 'undefined
 let remoteBase = ''
 let remoteToken = null
 export function setRemoteAuth(base, token) { remoteBase = base || ''; remoteToken = token || null }
+// A Supabase build (lib/supa-auth.js) gets its token from here before every request: the access
+// token lasts an hour and is renewed on the way, so a token copied once into remoteToken would
+// run out under a tab left open.
+let tokenSource = null
+export function setTokenSource(fn) { tokenSource = typeof fn === 'function' ? fn : null }
+async function syncToken() { if (tokenSource) remoteToken = (await tokenSource()) || null }
 // A Cloudflare Access service token (lib/cf-access.js): sent only to the origin it was entered
 // for, never on a same-origin request, where the browser's own Access session cookie already
 // does the job, and never to a server that merely happens to be paired or typed in.
@@ -65,6 +71,7 @@ export async function api(path, opts) {
   // there and the change was marked as synced while the server never saw it. status 0, not
   // undefined: this is not "offline", and the store must not show it as such.
   if (MOBILE && !remoteBase) throw failure(t('This phone is not connected to a server.'), 'not-paired', 0)
+  await syncToken()
   const headers = Object.assign({ 'Content-Type': 'application/json' }, init.headers, remoteHeaders())
   // A paired phone has an absolute base of its own; everyone else is relative to where the app
   // is served, so a subpath deployment reaches its own API instead of the proxy's root.
@@ -112,6 +119,18 @@ async function exchange(url, init) {
 // every "left" to https://localhost/api/activity. The api() call beside it reaches the server.
 export function beacon(path, body) {
   if (MOBILE) return false
+  // A beacon carries no Authorization header: with a token (a Supabase build) the same last word
+  // goes as a keepalive fetch, which outlives the page as a beacon does and can carry it.
+  if (tokenSource && remoteBase) {
+    try {
+      fetch(remoteBase + path, {
+        method: 'POST', keepalive: true,
+        headers: Object.assign({ 'Content-Type': 'application/json' }, remoteHeaders()),
+        body: JSON.stringify(body),
+      }).catch(() => {})
+      return true
+    } catch { return false }
+  }
   try {
     if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return false
     return !!navigator.sendBeacon(appBase().replace(/\/$/, '') + path, new Blob([JSON.stringify(body)], { type: 'application/json' }))
@@ -138,6 +157,7 @@ const timedOut = () => failure(t('The server did not answer in time.'), 'timeout
  */
 export async function apiBlob(path, { expectSize, idleMs = 30000, fetchImpl = globalThis.fetch } = {}) {
   if (MOBILE && !remoteBase) throw notPaired()
+  await syncToken()
   const max = typeof expectSize === 'number' && expectSize >= 0 ? expectSize + 1024 : Infinity
   const ctl = typeof AbortController === 'function' ? new AbortController() : null
   let timer = null
@@ -192,8 +212,13 @@ export async function apiBlob(path, { expectSize, idleMs = 30000, fetchImpl = gl
  * that is not the API's JSON (nginx's client_max_body_size, Cloudflare's 100 MB); 'timeout' after
  * `idleMs` without progress; no status at all when the network failed.
  */
-export function apiUpload(path, blob, mime, { onProgress, idleMs = 60000, XHR = globalThis.XMLHttpRequest } = {}) {
+export function apiUpload(path, blob, mime, opts = {}) {
   if (MOBILE && !remoteBase) return Promise.reject(notPaired())
+  // A Supabase build renews its token first; every other build starts the upload at once, as before.
+  if (tokenSource) return syncToken().then(() => upload(path, blob, mime, opts))
+  return upload(path, blob, mime, opts)
+}
+function upload(path, blob, mime, { onProgress, idleMs = 60000, XHR = globalThis.XMLHttpRequest } = {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XHR()
     let timer = null

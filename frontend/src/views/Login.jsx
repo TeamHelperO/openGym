@@ -12,6 +12,8 @@ import { askAddDeviceData } from '../sheets.jsx'
 import { passwordOn, PasswordRegisterForm, openPasswordSignIn } from '../components/PasswordAuth.jsx'
 import { openDeviceLinkRedeem } from '../components/Passkeys.jsx'
 import { openLostAccess } from '../components/LostAccess.jsx'
+import { SupaLogin } from '../components/SupaAuth.jsx'
+import { SUPA } from '../lib/supa-auth.js'
 
 function RegisterSheet({ close }) {
   const { setUser, pushState, pullState, loadConfig } = useStore()
@@ -94,6 +96,17 @@ export default function Login() {
       <div className="dim small" style={{ marginTop: 22, lineHeight: 1.6 }}>
         <a href={REPO} target="_blank" rel="noopener">{t('Self-host it in a minute →')}</a>
       </div>
+    </div>
+  )
+
+  // A Supabase build: e-mail and password, or a link by e-mail (components/SupaAuth.jsx).
+  if (SUPA) return (
+    <div className="narrow" style={wrap}>
+      {head}
+      <div className="muted" style={{ marginBottom: 24 }}>{t('Your workouts. Your weights. Your profile.')}</div>
+      <SupaLogin />
+      {canGuest && <Button variant="ghost" className="dim" onClick={() => setGuest(true)}>{t('Continue without account')}</Button>}
+      <div className="dim small" style={{ marginTop: 22, lineHeight: 1.5 }}>{t('Each profile keeps its own plan, workouts & body weight.')}</div>
     </div>
   )
 

@@ -1670,6 +1670,16 @@ export const PT_BR_OVERRIDES = {
   'App icon': 'Ícone do app',
   'Just for this phone. Some home screens take a moment to catch up.': 'Só para este celular. Algumas telas iniciais demoram um pouco para perceber.',
   'Try the Halloween app icon': 'Experimente o ícone de Halloween do app',
+  'Sign in with your e-mail and password, or get a link by e-mail.': 'Entre com seu e-mail e senha, ou receba um link por e-mail.',
+  'Send me a sign-in link': 'Me envie um link de acesso',
+  'Forgot your password?': 'Esqueceu a senha?',
+  'We sent a sign-in link to {0}. Open it on this device.': 'Enviamos um link de acesso para {0}. Abra neste aparelho.',
+  'We sent a link to {0} to confirm your account. Open it on this device.': 'Enviamos um link para {0} para confirmar sua conta. Abra neste aparelho.',
+  'We sent a link to {0} to set a new password.': 'Enviamos um link para {0} para criar uma nova senha.',
+  'Your new password is saved.': 'Sua nova senha foi salva.',
+  'Enter your e-mail address.': 'Digite seu endereço de e-mail.',
+  'Wrong e-mail or password.': 'E-mail ou senha incorretos.',
+  'Confirm your e-mail first. Open the link we sent you.': 'Confirme seu e-mail primeiro. Abra o link que enviamos.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

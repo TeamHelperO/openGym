@@ -229,6 +229,23 @@ async function removeAccount(u: Profile) {
   if (error) throw new HttpError(500, 'could not delete the account')
 }
 
+// Whether `password` is this profile's Supabase Auth password: a password sign-in, whose new
+// session is signed out again at once.
+async function passwordMatches(u: Profile, password: string) {
+  if (!u.email) return false
+  const anon = env('SUPABASE_ANON_KEY')
+  const r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: anon },
+    body: JSON.stringify({ email: u.email, password }),
+  })
+  if (!r.ok) return false
+  const d = await r.json().catch(() => ({}))
+  if (d.user?.id !== u.id) return false
+  if (d.access_token) await fetch(SUPABASE_URL + '/auth/v1/logout?scope=local', { method: 'POST', headers: { apikey: anon, Authorization: 'Bearer ' + d.access_token } }).catch(() => {})
+  return true
+}
+
 async function lastAdminLeaving(u: Profile) {
   if (!isAdmin(u)) return false
   const [{ admins, total }] = await sql`select count(*) filter (where admin)::int as admins, count(*)::int as total from opengym.profiles`
@@ -526,6 +543,14 @@ const routes: Record<string, Handler> = {
     return json(200, { ok: true })
   },
 
+  // What can prove it is the owner before a change to the account (the delete sheet asks first):
+  // the Supabase Auth password. No passkeys on this server. Someone who only ever signed in by
+  // e-mail link sets a password in Settings first.
+  'GET /api/account/passkeys': async (req, ctx) => {
+    const u = await requireUser(req, ctx)
+    return json(200, { passkeys: [], password: true, ...(await lastAdminLeaving(u) ? { deleteBlocked: 'last-admin' } : {}) })
+  },
+
   'POST /api/account/delete': async (req, ctx) => {
     const u = await requireUser(req, ctx)
     const body = await readBody(req)
@@ -533,7 +558,13 @@ const routes: Record<string, Handler> = {
       return json(400, { error: 'type the account name to confirm', code: 'confirm-name' })
     }
     if (await lastAdminLeaving(u)) return json(409, { error: 'the last admin cannot leave while other profiles remain', code: 'last-admin' })
-    await audit(req, 'auth.account.delete', { user: u, msg: 'session' })
+    // The current password, checked against Supabase Auth, is the proof (ProveOwner in the app).
+    if (typeof body.current !== 'string' || !body.current) return json(400, { error: 'enter your password to confirm', code: 'missing' })
+    if (!(await passwordMatches(u, body.current))) {
+      await audit(req, 'auth.account.delete', { ok: false, user: u, msg: 'bad-password' })
+      return json(403, { error: 'wrong password', code: 'bad-credentials' })
+    }
+    await audit(req, 'auth.account.delete', { user: u, msg: 'password' })
     await removeAccount(u)
     return json(200, { ok: true })
   },

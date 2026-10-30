@@ -50,6 +50,8 @@ import { ServerSyncSection, KeptChangesRows, leaveServer, connectServer, passkey
 import { passwordOn, PasswordRow, openPasswordSignIn, openPasswordRegister } from '../components/PasswordAuth.jsx'
 import { usePasskeys, PasskeysRow, DeviceLinkRow, openDeviceLinkRedeem, PairSheet } from '../components/Passkeys.jsx'
 import { DeleteAccountRow } from '../components/DeleteAccount.jsx'
+import { SUPA } from '../lib/supa-auth.js'
+import { openChangePassword } from '../components/SupaAuth.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, SearchField } from '../components/ui.jsx'
 import { PAGES, ROOT_GROUPS, pageVisible, searchSettings, pageTrail } from './settings-pages.js'
 import { platformNow } from '../lib/platform-now.js'
@@ -116,7 +118,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
   // This profile's passkeys and the code for another device (#95). A change to them is read back
   // here and by the password row, whose "Remove" depends on there being a passkey.
   // On a paired phone only the code for another device uses it (#551).
-  const passkeys = usePasskeys(!!user && !DEMO && (page === 'account'))
+  const passkeys = usePasskeys(!!user && !DEMO && !SUPA && (page === 'account'))
   const [credsV, setCredsV] = useState(0)
   const credsChanged = () => { passkeys.load(); setCredsV(v => v + 1) }
   const { update, importConflict, importBackup, setUnit, resetEverything: resetAll, setUser, pullState, pushState, resetDemo } = useStore()
@@ -1027,6 +1029,16 @@ export default function Settings({ page = null, find = null, via = null, entryKe
             onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
           <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host openGym')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
             onClick={() => window.open(REPO, '_blank', 'noopener')} />
+        </> : user && SUPA ? <>
+          {/* A Supabase build: the password is Supabase Auth's; no passkeys, device links or pairing. */}
+          {user.admin && <Row icon="crown" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
+          <Row icon="key" iconTint="var(--orange)" title={t('Change password')} accessory="chevron" onClick={openChangePassword} />
+          <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={signOutHere} />
+          <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
+          <AccountIdRow id={user.id} />
+        </> : SUPA ? <>
+          <Row icon="key" iconTint="var(--acc)" title={t('Sign in')} accessory="chevron" onClick={() => useStore.getState().setGuest(false)} />
+          <KeptChangesRows />
         </> : user ? <>
           {user.admin && <Row icon="crown" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
           <PasskeysRow state={passkeys.st} changed={credsChanged} />
