@@ -8,9 +8,10 @@ published at https://github.com/TeamHelperO/openGym. The changes include a Supab
 openGym — Copyright (C) 2026 Duarte Santos.
 openGym's own code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
 
-The exercise media below are licensed to openGym. SteelDay builds include them only under a
-licence of their own from Gym visual: the hosted build stages them only when
-`GYMVISUAL_LICENSED=1` is set (`frontend/vercel.json`).
+The exercise media below are licensed to openGym. SteelDay holds a licence of its own from
+Gym visual for them (since 2026-10-30); the hosted build stages them only when
+`GYMVISUAL_LICENSED=1` is set (`frontend/vercel.json`), so a copy of this source built without
+such a licence leaves them out.
 
 ## App store exception
 
