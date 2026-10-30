@@ -1,7 +1,16 @@
 # Third-party notices
 
+**SteelDay** is a modified version of openGym (https://github.com/DuarteSantos8/openGym),
+distributed under the same **GNU AGPL v3.0**. Its source, including every change made to it, is
+published at https://github.com/TeamHelperO/openGym. The changes include a Supabase backend
+(`supabase/`), Supabase Auth sign-in in the app, and the SteelDay name.
+
 openGym — Copyright (C) 2026 Duarte Santos.
 openGym's own code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
+
+The exercise media below are licensed to openGym. SteelDay builds include them only under a
+licence of their own from Gym visual: the hosted build stages them only when
+`GYMVISUAL_LICENSED=1` is set (`frontend/vercel.json`).
 
 ## App store exception
 

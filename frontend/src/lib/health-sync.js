@@ -84,7 +84,7 @@ export function onHealthChange(cb) { listeners.add(cb); return () => listeners.d
 const told = h => { listeners.forEach(cb => { try { cb(h) } catch { /* a closed screen */ } }) }
 
 /**
- * Writes what changed since the last sync and removes what was deleted from openGym. A no-op
+ * Writes what changed since the last sync and removes what was deleted from SteelDay. A no-op
  * while it is off. Resolves with the file's content afterwards; `error` is 'permission' when
  * Health Connect refused (the user took the permission back), 'unavailable' when it is gone.
  */
@@ -170,7 +170,7 @@ export async function enableHealth(S) {
 }
 
 /**
- * Turning it off stops the writing. With `removeWritten`, what openGym wrote is taken out of
+ * Turning it off stops the writing. With `removeWritten`, what SteelDay wrote is taken out of
  * Health Connect too; without it, it stays there as the user's own data. Rejects when the
  * removal fails, and then stays on, so nothing is left behind that the phone forgot it wrote.
  */
@@ -228,7 +228,7 @@ const RESUME_EVERY_MS = 2 * 60e3
 // permission); later ones from the newest seen, minus a margin for a scale that syncs late.
 export const WEIGHT_FIRST_MS = 30 * 24 * 3600e3
 // With Health Connect's history permission (Android, idea from #801) the first read goes back a
-// year instead, so a scale's weigh-ins from before openGym arrive too. Asked for with the weight;
+// year instead, so a scale's weigh-ins from before SteelDay arrive too. Asked for with the weight;
 // refused, the read simply stays at 30 days.
 export const WEIGHT_HISTORY_MS = 365 * 24 * 3600e3
 const WEIGHT_MARGIN_MS = 2 * 24 * 3600e3

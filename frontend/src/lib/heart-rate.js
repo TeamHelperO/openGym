@@ -39,7 +39,7 @@ export function hrLabel(set) {
 // Health Connect (Android) and Apple Health (iPhone) collect the heart rate every watch and band
 // saves there: Garmin, Fitbit, Galaxy Watch, Pixel Watch, Polar, Amazfit, Xiaomi, Gadgetbridge...
 // lib/health-sync.js reads the samples between a finished workout's start and end; this works
-// out which of them belong to which set. openGym keeps a tick per set (`at`), not a start, so a
+// out which of them belong to which set. SteelDay keeps a tick per set (`at`), not a start, so a
 // set's window is estimated the way the .fit export does it (lib/fit-export.js): it ends at the
 // tick and lasts as long as its reps, seconds or minutes take, but never starts before the set
 // ahead of it was ticked. The rest after a set runs until the next one starts.

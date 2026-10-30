@@ -193,7 +193,7 @@ describe('address search (Nominatim)', () => {
     expect(r).toEqual([{ lat: 47.1, lng: 8.2, label: 'Gym Street 1, Town' }])
     const [url, init] = fetcher.mock.calls[0]
     expect(url).toMatch(/^https:\/\/nominatim\.openstreetmap\.org\/search\?format=jsonv2&limit=5&q=Gym%20Street%201/)
-    expect(init.headers['User-Agent']).toMatch(/^openGym\/.+opengym\.ch/)
+    expect(init.headers['User-Agent']).toMatch(/^SteelDay\/.+github\.com/)
   })
   it('an empty query asks nobody', async () => {
     const fetcher = vi.fn()

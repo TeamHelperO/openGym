@@ -159,7 +159,7 @@ describe('the round trip: our export through our own importer', () => {
   })
 
   it('is recognised as ours', () => {
-    expect(parsed.source).toBe('openGym')
+    expect(parsed.source).toBe('SteelDay')
     expect(parsed.skipped).toBe(0)
   })
 

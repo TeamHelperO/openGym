@@ -1,6 +1,6 @@
 {
-  "name": "openGym",
-  "short_name": "openGym",
+  "name": "SteelDay",
+  "short_name": "SteelDay",
   "description": "Personal gym & body weight tracker",
   "start_url": "./",
   "scope": "./",

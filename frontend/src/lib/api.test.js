@@ -75,7 +75,7 @@ describe('api() refuses an answer that is not the server\'s', () => {
     await expect(api('/api/data')).rejects.toMatchObject({ status: 502, message: 'HTTP 502', data: {} })
   })
 
-  it('pairing with something that is not an openGym server fails instead of saving an empty pairing', async () => {
+  it('pairing with something that is not an SteelDay server fails instead of saving an empty pairing', async () => {
     const { pairRedeem } = await import('./api.js')
     vi.stubGlobal('fetch', async () => html())
     await expect(pairRedeem('https://gym.example.com', 'ABCD2345')).rejects.toMatchObject({ code: 'bad-response' })
@@ -206,7 +206,7 @@ describe('passkeyError', () => {
 // Self-hosting (Discord tcmac 10-21): an api service whose ORIGIN is not the address in the
 // browser refuses every write, and the app used to show "cross-origin request refused".
 describe('a write refused for the wrong address', () => {
-  const KEY = 'This server only takes changes made at {0}. If you opened openGym at another address, whoever runs the server can set ORIGIN and RP_ID to match it (the self-hosting guide shows how).'
+  const KEY = 'This server only takes changes made at {0}. If you opened SteelDay at another address, whoever runs the server can set ORIGIN and RP_ID to match it (the self-hosting guide shows how).'
   afterEach(() => { _setLangState('en', {}, null, null); vi.unstubAllGlobals() })
   const answer = (status, body) => vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })))
   it('says which address the server expects, in the UI language', async () => {

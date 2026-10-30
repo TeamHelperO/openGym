@@ -21,7 +21,7 @@ describe('nav', () => {
   })
 
   it('a closing sheet hands its history entry to the next page', () => {
-    history.pushState({ openGymSheet: true }, '')
+    history.pushState({ SteelDaySheet: true }, '')
     const close = vi.fn()
     closeThenNav(close, '/settings/workout')
     expect(close).toHaveBeenCalledOnce()
@@ -40,7 +40,7 @@ describe('nav', () => {
   })
 
   it('starting through the weigh-in sheet replaces the sheet\'s entry', () => {
-    history.pushState({ openGymSheet: true }, '')
+    history.pushState({ SteelDaySheet: true }, '')
     navToWorkout()
     expect(calls).toEqual([['/workout', { replace: true }]])
   })

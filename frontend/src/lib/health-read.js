@@ -1,4 +1,4 @@
-// What openGym takes back from the phone's health hub (#544, #127): Health Connect on Android,
+// What SteelDay takes back from the phone's health hub (#544, #127): Health Connect on Android,
 // Apple Health on the iPhone. Two things, each behind its own switch in Settings:
 //
 //   - the heart rate during a finished workout, per set and for the session (lib/heart-rate.js
@@ -8,9 +8,9 @@
 // Pure: lib/health-sync.js reads the hub and hands the records over; this decides what goes into
 // the log. The rules:
 //   - a set that already has a heart rate keeps it (the Apple Watch measured it live);
-//   - a day with a weigh-in typed into openGym keeps it: an imported one never replaces it, and
+//   - a day with a weigh-in typed into SteelDay keeps it: an imported one never replaces it, and
 //     one typed in later replaces the imported one (lib/sync-merge.js mergeBodyweight);
-//   - openGym's own records in the hub (what it wrote there itself) are never read back as new;
+//   - SteelDay's own records in the hub (what it wrote there itself) are never read back as new;
 //   - an imported weigh-in carries `src` and is never written back to the hub (no ping-pong:
 //     lib/health-connect.js healthRecords leaves it out).
 import { hrFromSamples, sanitizeHr } from './heart-rate.js'
@@ -21,10 +21,10 @@ export const LB_PER_KG = 2.2046226218
 // Weigh-ins outside this are a typo or another person's profile in the hub, not a body weight.
 const KG_MIN = 20
 const KG_MAX = 400
-// Packages and bundle ids that are openGym: the app, its test build, the Apple Watch app.
+// Packages and bundle ids that are SteelDay: the app, its test build, the Apple Watch app.
 const OWN = /^ch\.duartesantos\.opengym(\.|$)/
 
-/** Whether a record in the hub is one openGym wrote itself (by its client id or by its origin). */
+/** Whether a record in the hub is one SteelDay wrote itself (by its client id or by its origin). */
 export function isOwnRecord(rec) {
   if (!rec || typeof rec !== 'object') return false
   if (/^opengym-/.test(String(rec.clientId || ''))) return true
@@ -73,8 +73,8 @@ export function lacksHeartRate(w) {
  * Weigh-ins from the hub (`records`: [{ t, kg, id, origin, clientId }]) put into the log `S`
  * (mutated), at most one per day: the latest of that day. `seen` is this phone's memo of what it
  * imported ({ [day]: { id, t } }), updated in place, which makes a second read of the same records
- * a no-op. A day is left alone when it has a weigh-in typed into openGym, when the weigh-in was
- * deleted in openGym after the record was taken, or when the record is not newer than the one
+ * a no-op. A day is left alone when it has a weigh-in typed into SteelDay, when the weigh-in was
+ * deleted in SteelDay after the record was taken, or when the record is not newer than the one
  * already imported for it. Weights go in in the profile's unit. Returns the days changed.
  */
 export function mergeWeighIns(S, records, { src, seen = {} } = {}) {
@@ -95,7 +95,7 @@ export function mergeWeighIns(S, records, { src, seen = {} } = {}) {
   for (const [d, r] of latest) {
     const ex = S.bodyweight.find(b => b && b.d === d)
     if (ex && !ex.src) continue                           // typed in: it wins
-    if (Number(deleted[d]) > r.t && !ex) continue         // removed in openGym after it was taken
+    if (Number(deleted[d]) > r.t && !ex) continue         // removed in SteelDay after it was taken
     const before = seen[d] ? Number(seen[d].t) : ex ? Number(ex.t) || 0 : 0
     if (ex && !(r.t > before)) continue
     if (!ex && seen[d] && !(r.t > Number(seen[d].t))) continue

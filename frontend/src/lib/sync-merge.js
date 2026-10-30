@@ -169,7 +169,7 @@ export function mergeBodyweight(a = [], b = []) {
   for (const e of [...list(a), ...list(b)]) {
     if (!e || e.d == null) continue
     const cur = byDay.get(e.d)
-    // A weigh-in typed into openGym beats one read from the phone's health hub (`src`, lib/health-read.js)
+    // A weigh-in typed into SteelDay beats one read from the phone's health hub (`src`, lib/health-read.js)
     // whichever is newer: the scale's reading is the fallback, never a correction of the user's own.
     if (!cur || (!!cur.src !== !!e.src ? !e.src : (e.t || 0) > (cur.t || 0))) byDay.set(e.d, e)
   }

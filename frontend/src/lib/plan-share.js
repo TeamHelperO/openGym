@@ -1,7 +1,7 @@
 // Share a weekly plan.
 //
 // Two jobs:
-//  1. A small, self-contained file a friend can import into THEIR openGym — just the
+//  1. A small, self-contained file a friend can import into THEIR SteelDay — just the
 //     routines + the week schedule + the custom exercises those routines use. It never
 //     carries workouts, weigh-ins or settings, and importing MERGES (adds routines with
 //     fresh ids) so nothing the friend already has is touched.
@@ -35,7 +35,7 @@ const PLAN_UNITS = new Set(['kg', 'lb'])
 // A plan's numbers are in the unit that wrote it. Missing unit is deliberately legacy-compatible:
 // old files were read as already being in the recipient's unit, so keep their values unchanged.
 const planUnit = value => value === 'lbs' ? 'lb' : PLAN_UNITS.has(value) ? value : null
-const unitError = () => { throw new Error(t('this isn’t an openGym plan file')) }
+const unitError = () => { throw new Error(t('this isn’t an SteelDay plan file')) }
 
 function declaredPlanUnit(data) {
   let declared = null
@@ -253,7 +253,7 @@ export function buildPlanBundle(S, name) {
  * is trained.
  */
 export function parsePlan(raw, destinationUnit = 'kg') {
-  const notPlan = () => Object.assign(new Error(t('this isn’t an openGym plan file')), { code: 'not-plan' })
+  const notPlan = () => Object.assign(new Error(t('this isn’t an SteelDay plan file')), { code: 'not-plan' })
   let data = raw
   if (typeof raw === 'string') { try { data = JSON.parse(raw) } catch { throw notPlan() } }
   const destination = planUnit(destinationUnit)

@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { t, getLang } from '../lib/i18n.js'
+import { SOURCE_URL } from '../lib/brand.js'
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { Section, Row, Switch, Slider, TextField, Button } from '../components/ui.jsx'
@@ -20,7 +21,7 @@ import {
 // Asked only on an explicit tap of Search, never while typing (Nominatim's usage policy), with a
 // User-Agent that says who is asking.
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search'
-const USER_AGENT = 'openGym/' + (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev') + ' (gym reminder; +https://opengym.ch)'
+const USER_AGENT = 'SteelDay/' + (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev') + ' (gym reminder; +' + SOURCE_URL + ')'
 export async function searchAddress(q, fetcher = nativeFetch) {
   const query = String(q || '').trim()
   if (!query) return []
@@ -38,8 +39,8 @@ const ios = () => platformNow() === 'ios'
 const explainAlways = () => new Promise(resolve => confirmSheet({
   title: ios() ? t('Allow location “Always”?') : t('Allow location “All the time”?'),
   message: <>
-    <p>{t('To notice that you walked into your gym while openGym is closed, the phone needs to let it see your location in the background.')}</p>
-    <p style={{ marginTop: 8 }}>{t('The phone itself watches the gyms you added and only wakes openGym when you arrive. No tracking in between, and your locations never leave this phone.')}</p>
+    <p>{t('To notice that you walked into your gym while SteelDay is closed, the phone needs to let it see your location in the background.')}</p>
+    <p style={{ marginTop: 8 }}>{t('The phone itself watches the gyms you added and only wakes SteelDay when you arrive. No tracking in between, and your locations never leave this phone.')}</p>
     {!ios() && <p style={{ marginTop: 8 }}>{t('On the next screen, pick “Allow all the time”.')}</p>}
   </>,
   confirmText: t('Continue'),
@@ -86,16 +87,16 @@ export default function GymReminderPage() {
       if (p?.background !== 'granted') {
         if (!(await explainAlways())) return
         p = await askForegroundLocation()
-        if (p?.location !== 'granted') { setPerm(p); toast(t('Location isn’t allowed for openGym. You can change that in the phone’s settings.')); return }
+        if (p?.location !== 'granted') { setPerm(p); toast(t('Location isn’t allowed for SteelDay. You can change that in the phone’s settings.')); return }
         p = await askBackgroundLocation()
         setPerm(p)
-        if (p?.background !== 'granted') { toast(t('Without background location the phone can’t spot your gym while openGym is closed.')); return }
+        if (p?.background !== 'granted') { toast(t('Without background location the phone can’t spot your gym while SteelDay is closed.')); return }
       }
       try {
         const { LocalNotifications } = await import('@capacitor/local-notifications')
         let n = await LocalNotifications.checkPermissions()
         if (n.display !== 'granted') n = await LocalNotifications.requestPermissions()
-        if (n.display !== 'granted') toast(t('Notifications are off for openGym, so the reminder has nowhere to show up.'))
+        if (n.display !== 'granted') toast(t('Notifications are off for SteelDay, so the reminder has nowhere to show up.'))
       } catch { /* no plugin: the native side posts anyway where it may */ }
       await save({ ...config, on: true })
     } finally { setBusy(false) }
@@ -106,7 +107,7 @@ export default function GymReminderPage() {
   const addHere = async () => {
     let p = await gymPermissions()
     if (p?.location !== 'granted') p = await askForegroundLocation()
-    if (p?.location !== 'granted') { toast(t('Location isn’t allowed for openGym. You can change that in the phone’s settings.')); return }
+    if (p?.location !== 'granted') { toast(t('Location isn’t allowed for SteelDay. You can change that in the phone’s settings.')); return }
     toast(t('Finding you…'))
     const here = await currentPosition()
     if (!here) { toast(t('Couldn’t find where you are. Try the map instead.')); return }
@@ -124,7 +125,7 @@ export default function GymReminderPage() {
   const setWin = patch => save({ ...config, window: { ...(win || DEFAULT_WINDOW), ...patch } })
 
   return <>
-    <Section footer={t('Walk into one of your gyms and openGym nudges you to hit Start. Once a day at most, and never when you already trained. Your gyms stay on this phone.')}>
+    <Section footer={t('Walk into one of your gyms and SteelDay nudges you to hit Start. Once a day at most, and never when you already trained. Your gyms stay on this phone.')}>
       <Row icon="mapPin" iconTint="var(--green)" title={t('Gym reminder')}>
         <Switch checked={config.on} disabled={busy} onChange={toggle} aria-label={t('Gym reminder')} />
       </Row>
@@ -149,7 +150,7 @@ export default function GymReminderPage() {
       </Row>}
     </Section>
     {perm && <Section footer={perm.background === 'granted' ? null : perm.precise === false
-      ? t('Precise location is off for openGym. Turn it on in the phone’s settings, or your gym can’t be spotted.')
+      ? t('Precise location is off for SteelDay. Turn it on in the phone’s settings, or your gym can’t be spotted.')
       : t('The reminder needs location access in the background. You can allow it in the phone’s settings.')}>
       <Row icon="lock" iconTint="var(--grey)" title={t('Location access')} value={permLabel(perm)}
         accessory={perm.background === 'granted' ? 'none' : 'chevron'}
@@ -157,7 +158,7 @@ export default function GymReminderPage() {
     </Section>}
     {perm?.quick && perm.background === 'granted' && <Section footer={perm.quick === 'granted'
       ? t('Near a gym, the phone takes a short GPS look (a few minutes at most) so the nudge comes at the door.')
-      : t('Android can take up to half an hour to notice you walked in. Set openGym’s battery use to Unrestricted and the phone takes a short GPS look when you get near a gym, so the nudge comes at the door.')}>
+      : t('Android can take up to half an hour to notice you walked in. Set SteelDay’s battery use to Unrestricted and the phone takes a short GPS look when you get near a gym, so the nudge comes at the door.')}>
       <Row icon="bolt" iconTint="var(--orange)" title={t('Quick arrival check')} value={perm.quick === 'granted' ? t('On') : t('Off')}
         accessory={perm.quick === 'granted' ? 'none' : 'chevron'}
         onClick={perm.quick === 'granted' ? undefined : () => openAppSettings()} />
@@ -256,7 +257,7 @@ export function GymEditPage() {
   const here = async () => {
     let p = await gymPermissions()
     if (p?.location !== 'granted') p = await askForegroundLocation()
-    if (p?.location !== 'granted') { toast(t('Location isn’t allowed for openGym. You can change that in the phone’s settings.')); return }
+    if (p?.location !== 'granted') { toast(t('Location isn’t allowed for SteelDay. You can change that in the phone’s settings.')); return }
     const h = await currentPosition()
     if (h) set({ lat: h.lat, lng: h.lng })
     else toast(t('Couldn’t find where you are. Try the map instead.'))

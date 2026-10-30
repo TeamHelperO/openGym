@@ -16,13 +16,13 @@ const COPY = {
   notifications: () => ({
     icon: 'bell',
     title: t('Never miss the end of a rest'),
-    body: t('openGym can tap you on the shoulder when a rest is over, even with the phone locked in your pocket.'),
+    body: t('SteelDay can tap you on the shoulder when a rest is over, even with the phone locked in your pocket.'),
     lines: [t('Rest timer, right on the lock screen'), t('Training reminders, only if you switch them on')],
   }),
   appleHealth: () => ({
     icon: 'heart',
     title: t('Your workouts in Apple Health'),
-    body: t('openGym can save every workout and weigh-in to Apple Health, and your Apple Watch can show your heart rate while you lift.'),
+    body: t('SteelDay can save every workout and weigh-in to Apple Health, and your Apple Watch can show your heart rate while you lift.'),
     lines: [t('Workouts and weigh-ins saved to Apple Health'), t('Heart rate per set on your Apple Watch'), t('Switch it off anytime in Settings')],
     foot: t('You can change it anytime in Settings.'),
   }),

@@ -16,7 +16,7 @@ import { Button } from './ui.jsx'
 export default class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { failed: false } }
   static getDerivedStateFromError() { return { failed: true } }
-  componentDidCatch(err) { console.error('openGym render error:', err) }
+  componentDidCatch(err) { console.error('SteelDay render error:', err) }
 
   render() {
     if (!this.state.failed) return this.props.children
@@ -28,7 +28,7 @@ export default class ErrorBoundary extends Component {
           <div style={{ fontWeight: 600, marginBottom: 6 }}>{t('Something went wrong')}</div>
           {t('This screen could not be drawn. Your data is safe on this device.')}
         </div>
-        <Button variant="primary" icon="reset" onClick={() => location.reload()}>{t('Reload openGym')}</Button>
+        <Button variant="primary" icon="reset" onClick={() => location.reload()}>{t('Reload SteelDay')}</Button>
         {active && <>
           <div style={{ height: 8 }} />
           <Button variant="danger" icon="trash" onClick={() => {

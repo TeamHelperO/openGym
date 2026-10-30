@@ -39,7 +39,7 @@ export function CsvExportSheet({ close }) {
   return <>
     <h3>{t('Export as spreadsheet (CSV)')}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>
-      {t('One row per set, for Excel, Sheets, your coach or another app. openGym reads it back too.')}
+      {t('One row per set, for Excel, Sheets, your coach or another app. SteelDay reads it back too.')}
     </div>
     <Segmented value={range} onChange={setRange} options={[
       { value: 'all', label: t('All') },

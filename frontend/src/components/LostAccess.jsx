@@ -14,7 +14,7 @@ import { Button } from './ui.jsx'
 const STEPS = () => [
   ['fingerprint', t('Your passkey may be synced'), t('Passkeys kept in iCloud Keychain, Google Password Manager or a password manager are on your other devices too. Try “Sign in with passkey” there.')],
   ['qr', t('Another device still signed in?'), t('On that one, open Settings → Account → Add another device, then enter its code here with “I have a code”.')],
-  ['person', t('Ask your admin'), t('Whoever runs your openGym server can make you a recovery code in the admin dashboard. Enter it with “I have a code”, and this device gets a new passkey.')],
+  ['person', t('Ask your admin'), t('Whoever runs your SteelDay server can make you a recovery code in the admin dashboard. Enter it with “I have a code”, and this device gets a new passkey.')],
   ['wrench', t('Running the server yourself?'), t('Get a recovery code for any profile, the owner’s too, on the server: docker compose exec api node recover.js "Your name"')],
 ]
 
@@ -29,7 +29,7 @@ export function LostAccessSheet({ close }) {
       </div>)}
     </div>
     {MOBILE
-      ? <div className="small dim" style={{ marginBottom: 14, lineHeight: 1.45 }}>{t('In this app: enter the code on your openGym site in a browser, then pair the app again from Settings → Account there.')}</div>
+      ? <div className="small dim" style={{ marginBottom: 14, lineHeight: 1.45 }}>{t('In this app: enter the code on your SteelDay site in a browser, then pair the app again from Settings → Account there.')}</div>
       : <><Button variant="primary" icon="qr" onClick={() => { close(); openDeviceLinkRedeem() }}>{t('I have a code')}</Button><div style={{ height: 8 }} /></>}
     <Button variant="ghost" className="dim" onClick={close}>{t('Done')}</Button>
   </>

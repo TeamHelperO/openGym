@@ -43,7 +43,7 @@ beforeEach(() => {
 })
 
 describe('downloadAndInstall (Android)', () => {
-  it('opens the installer only once openGym is back in front (lampi_: downloaded, never installed)', async () => {
+  it('opens the installer only once SteelDay is back in front (lampi_: downloaded, never installed)', async () => {
     // The person switched apps while the APK came down: Android would block the installer.
     m.downloadFile = vi.fn(async () => { m.calls.push('download'); m.cached = true; m.active = false })
     let done = false

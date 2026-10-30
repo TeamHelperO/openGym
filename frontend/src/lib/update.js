@@ -2,7 +2,7 @@
 // the latest release on GitHub and optionally downloads + installs the APK.
 //
 // The GitHub releases API is public, so no token is needed (60 requests an hour per address,
-// and the check runs once per app session). GitHub is openGym's home since v1.4.0; the GitLab
+// and the check runs once per app session). GitHub is SteelDay's home since v1.4.0; the GitLab
 // mirror stopped getting releases, so a phone that asked it saw no update.
 // On Android (Capacitor) the APK is downloaded natively into the cache directory (an APK with
 // the animations is ~300 MB: read into the WebView's memory it ran phones out of it, and
@@ -70,15 +70,15 @@ async function fetchLatest() {
 
 /**
  * Since v1.4.2 a release carries three sideloaded APKs, the same app with different animations
- * built in: Standard (180 px, openGym-<v>.apk), Plus (240 px, openGym-Plus-<v>.apk) and HD
- * (360 px, openGym-HD-<v>.apk). Each installed APK only ever updates to its own kind, so a phone
+ * built in: Standard (180 px, SteelDay-<v>.apk), Plus (240 px, SteelDay-Plus-<v>.apk) and HD
+ * (360 px, SteelDay-HD-<v>.apk). Each installed APK only ever updates to its own kind, so a phone
  * that picked HD keeps HD, and nobody is handed a download twice the size they never asked for.
  * The build says which kind it is (lib/apk-variant.js).
  * The checksum is the one named after the chosen APK, never just the first .sha256 in the list.
  * A release without an APK of this kind: no direct download (the update row then opens the
  * releases page), rather than quietly swapping it for another kind.
  * Phones from before v1.4.2 take the first .apk of the list, and GitHub sorts assets by name:
- * "openGym-1…" comes before "openGym-HD-…" and "openGym-Plus-…", so they land on Standard.
+ * "SteelDay-1…" comes before "SteelDay-HD-…" and "SteelDay-Plus-…", so they land on Standard.
  */
 export { APK_VARIANTS, APK_VARIANT }
 const tagged = (name, tag) => new RegExp(`(^|[-_.])${tag}([-_.]|$)`, 'i').test(name)
@@ -122,7 +122,7 @@ export async function sha256(buffer) {
 const UPDATE_FILE = 'opengym-update.apk'
 
 /**
- * Resolves once openGym is the app in front. The package installer is an activity, and Android
+ * Resolves once SteelDay is the app in front. The package installer is an activity, and Android
  * (10 and later) does not let an app start one from the background: it refuses without a word.
  * The APK is 300 to 760 MB, plenty of time to switch to another app while it comes down, and then
  * the download finished, the installer never opened and the progress sheet just closed. So the

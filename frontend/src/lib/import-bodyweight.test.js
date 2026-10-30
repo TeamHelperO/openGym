@@ -58,7 +58,7 @@ describe('Strong measurements export', () => {
 
 // Discord lajawi, eibergerd: an Apple Health export (or a Google Health / Health Connect CSV)
 // imported here went straight back into Apple Health / Health Connect, a second copy of every
-// weigh-in. An imported weigh-in is marked, and only one typed into openGym goes out.
+// weigh-in. An imported weigh-in is marked, and only one typed into SteelDay goes out.
 describe('imported weigh-ins never go back to the health hub', () => {
   it('marks what an import brings, and leaves what was there alone', async () => {
     const { mergeImport } = await import('./import-csv.js')

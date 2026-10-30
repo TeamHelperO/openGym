@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-/* Someone who installed openGym v1.0.0 (2026-07-20) and never cleared the app updates to this
+/* Someone who installed SteelDay v1.0.0 (2026-07-20) and never cleared the app updates to this
  * build. Their phone still holds the state exactly as v1.0.0 saved it: a smaller DEF, the week as
  * one routine id per weekday (not a list), workouts with `routineId` instead of `routineIds`, sets
  * with no mode, cardio as minutes and speed, `exWeights` as { w, d }. The app overlays that on

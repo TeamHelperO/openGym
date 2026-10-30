@@ -35,7 +35,7 @@ describe('planPrintHTML', () => {
     expect(body).not.toContain('Week schedule')
     expect(body).not.toContain('Weekly Training Plan')
     expect(body).not.toContain('Pull day')
-    // The masthead: the openGym logo, who it is for, the count under the title.
+    // The masthead: the SteelDay logo, who it is for, the count under the title.
     expect(html).toContain('class="logo-mark"')
     expect(html).toMatch(/<div class="mast-meta"><b>Ana<\/b><br>/)
     expect(html).toMatch(/<div class="facts">3 exercises<\/div>/)

@@ -164,7 +164,7 @@ describe('weigh-ins', () => {
     expect(applied).toBe(1)
   })
 
-  it('leaves a day with a weigh-in typed into openGym alone', async () => {
+  it('leaves a day with a weigh-in typed into SteelDay alone', async () => {
     S.bodyweight = [{ d: '2026-10-15', w: 82, t: NOW - 10 * 3600e3 }]
     h.weights = [rec(2, 80.4)]
     await hs.enableRead('weight', getState, { apply })

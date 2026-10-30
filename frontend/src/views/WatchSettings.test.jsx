@@ -55,7 +55,7 @@ describe('Settings → Apple Watch', () => {
   // (it does each time it starts), so "installed" alone no longer reads as "in touch".
   it('says whether the watch has checked in, and when it last did', async () => {
     let el = await mount()
-    expect(el.textContent).toContain('The watch hasn’t checked in yet. Open openGym on it once.')
+    expect(el.textContent).toContain('The watch hasn’t checked in yet. Open SteelDay on it once.')
     writeWatchStatus({ health: 'on', at: Date.now() - 5 * 60e3 })
     el = await mount()
     expect(el.textContent).toContain('Last heard from the watch: 5 minutes ago')
