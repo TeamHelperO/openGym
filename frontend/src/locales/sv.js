@@ -2645,4 +2645,6 @@ export default {
   'Enter your e-mail address.': 'Ange din e-postadress.',
   'Wrong e-mail or password.': 'Fel e-post eller lösenord.',
   'Confirm your e-mail first. Open the link we sent you.': 'Bekräfta din e-post först. Öppna länken vi skickade.',
+  'Too many attempts. Wait a few minutes and try again.': 'För många försök. Vänta några minuter och försök igen.',
+  'That link has expired or was already used. Ask for a new one.': 'Länken har gått ut eller redan använts. Be om en ny.',
 }

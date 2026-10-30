@@ -2598,4 +2598,6 @@ export default {
   'Enter your e-mail address.': 'अपना ईमेल पता दर्ज करें।',
   'Wrong e-mail or password.': 'ईमेल या पासवर्ड गलत है।',
   'Confirm your e-mail first. Open the link we sent you.': 'पहले अपना ईमेल पुष्टि करें। हमारा भेजा लिंक खोलें।',
+  'Too many attempts. Wait a few minutes and try again.': 'बहुत अधिक प्रयास। कुछ मिनट रुककर फिर से कोशिश करें।',
+  'That link has expired or was already used. Ask for a new one.': 'यह लिंक समाप्त हो गया है या पहले ही इस्तेमाल हो चुका है। नया लिंक मंगाएँ।',
 }

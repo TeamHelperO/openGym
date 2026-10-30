@@ -1680,6 +1680,8 @@ export const PT_BR_OVERRIDES = {
   'Enter your e-mail address.': 'Digite seu endereço de e-mail.',
   'Wrong e-mail or password.': 'E-mail ou senha incorretos.',
   'Confirm your e-mail first. Open the link we sent you.': 'Confirme seu e-mail primeiro. Abra o link que enviamos.',
+  'Too many attempts. Wait a few minutes and try again.': 'Muitas tentativas. Espere alguns minutos e tente de novo.',
+  'That link has expired or was already used. Ask for a new one.': 'Esse link expirou ou já foi usado. Peça um novo.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

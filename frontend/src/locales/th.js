@@ -2609,4 +2609,6 @@ export default {
   'Enter your e-mail address.': 'ใส่อีเมลของคุณ',
   'Wrong e-mail or password.': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
   'Confirm your e-mail first. Open the link we sent you.': 'ยืนยันอีเมลของคุณก่อน เปิดลิงก์ที่เราส่งให้',
+  'Too many attempts. Wait a few minutes and try again.': 'พยายามหลายครั้งเกินไป รอสักครู่แล้วลองอีกครั้ง',
+  'That link has expired or was already used. Ask for a new one.': 'ลิงก์นี้หมดอายุหรือถูกใช้ไปแล้ว ขอลิงก์ใหม่',
 }

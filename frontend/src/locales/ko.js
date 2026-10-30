@@ -2598,4 +2598,6 @@ export default {
   'Enter your e-mail address.': '이메일 주소를 입력하세요.',
   'Wrong e-mail or password.': '이메일 또는 비밀번호가 올바르지 않아요.',
   'Confirm your e-mail first. Open the link we sent you.': '먼저 이메일을 확인하세요. 보내드린 링크를 여세요.',
+  'Too many attempts. Wait a few minutes and try again.': '시도 횟수가 너무 많아요. 몇 분 후에 다시 시도하세요.',
+  'That link has expired or was already used. Ask for a new one.': '링크가 만료되었거나 이미 사용되었어요. 새 링크를 요청하세요.',
 }

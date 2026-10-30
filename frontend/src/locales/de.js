@@ -2618,4 +2618,6 @@ export default {
   'Enter your e-mail address.': 'Gib deine E-Mail-Adresse ein.',
   'Wrong e-mail or password.': 'E-Mail oder Passwort falsch.',
   'Confirm your e-mail first. Open the link we sent you.': 'Bestätige zuerst deine E-Mail. Öffne den Link, den wir dir geschickt haben.',
+  'Too many attempts. Wait a few minutes and try again.': 'Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.',
+  'That link has expired or was already used. Ask for a new one.': 'Dieser Link ist abgelaufen oder wurde schon benutzt. Fordere einen neuen an.',
 }

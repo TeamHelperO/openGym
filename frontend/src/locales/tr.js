@@ -2598,4 +2598,6 @@ export default {
   'Enter your e-mail address.': 'E-posta adresini gir.',
   'Wrong e-mail or password.': 'E-posta ya da şifre hatalı.',
   'Confirm your e-mail first. Open the link we sent you.': 'Önce e-postanı onayla. Gönderdiğimiz bağlantıyı aç.',
+  'Too many attempts. Wait a few minutes and try again.': 'Çok fazla deneme. Birkaç dakika bekleyip tekrar dene.',
+  'That link has expired or was already used. Ask for a new one.': 'Bu bağlantının süresi doldu ya da zaten kullanıldı. Yenisini iste.',
 }

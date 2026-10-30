@@ -2595,4 +2595,6 @@ export default {
   'Enter your e-mail address.': 'Введіть адресу e-mail.',
   'Wrong e-mail or password.': 'Неправильний e-mail або пароль.',
   'Confirm your e-mail first. Open the link we sent you.': 'Спершу підтвердьте e-mail. Відкрийте надіслане посилання.',
+  'Too many attempts. Wait a few minutes and try again.': 'Забагато спроб. Зачекайте кілька хвилин і спробуйте знову.',
+  'That link has expired or was already used. Ask for a new one.': 'Посилання застаріло або вже використане. Запросіть нове.',
 }

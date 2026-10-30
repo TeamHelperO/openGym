@@ -2653,4 +2653,6 @@ export default {
   'Enter your e-mail address.': 'أدخل عنوان بريدك الإلكتروني.',
   'Wrong e-mail or password.': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
   'Confirm your e-mail first. Open the link we sent you.': 'أكّد بريدك الإلكتروني أولًا. افتح الرابط الذي أرسلناه.',
+  'Too many attempts. Wait a few minutes and try again.': 'محاولات كثيرة جدًا. انتظر بضع دقائق ثم حاول مجددًا.',
+  'That link has expired or was already used. Ask for a new one.': 'انتهت صلاحية هذا الرابط أو استُخدم من قبل. اطلب رابطًا جديدًا.',
 }

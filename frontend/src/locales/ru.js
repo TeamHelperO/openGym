@@ -2602,4 +2602,6 @@ export default {
   'Enter your e-mail address.': 'Введите адрес e-mail.',
   'Wrong e-mail or password.': 'Неверный e-mail или пароль.',
   'Confirm your e-mail first. Open the link we sent you.': 'Сначала подтвердите e-mail. Откройте ссылку, которую мы отправили.',
+  'Too many attempts. Wait a few minutes and try again.': 'Слишком много попыток. Подождите несколько минут и попробуйте снова.',
+  'That link has expired or was already used. Ask for a new one.': 'Срок действия ссылки истёк или она уже использована. Запросите новую.',
 }

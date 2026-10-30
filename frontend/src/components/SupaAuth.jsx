@@ -24,7 +24,10 @@ function message(e, fallback) {
   if (code === 'user_already_exists' || code === 'email_exists') return t('Another profile already uses this e-mail address.')
   if (code === 'weak_password') return t('Use at least {0} characters.', MIN_PASSWORD)
   if (code === 'invite-invalid') return t('This app is invite-only. Enter the code you were given.')
-  return e?.message || fallback
+  if (/rate_limit/.test(code) || e?.status === 429) return t('Too many attempts. Wait a few minutes and try again.')
+  if (code === 'otp_expired' || code === 'flow_state_expired') return t('That link has expired or was already used. Ask for a new one.')
+  // Anything else from the Auth API comes in English: the screen's own sentence says it in the app's language.
+  return fallback
 }
 
 // The session is in; the app's own profile comes next, made on this first request when it is new.
@@ -56,7 +59,7 @@ export function SupaLogin() {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState(() => takeLinkError() || '')
+  const [err, setErr] = useState(() => (takeLinkError() ? t('That link has expired or was already used. Ask for a new one.') : ''))
   const [sent, setSent] = useState('')
   const first = useRef(null)
 

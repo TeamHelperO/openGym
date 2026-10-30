@@ -2598,4 +2598,6 @@ export default {
   'Enter your e-mail address.': 'Inserisci il tuo indirizzo e-mail.',
   'Wrong e-mail or password.': 'E-mail o password errate.',
   'Confirm your e-mail first. Open the link we sent you.': 'Conferma prima la tua e-mail. Apri il link che ti abbiamo inviato.',
+  'Too many attempts. Wait a few minutes and try again.': 'Troppi tentativi. Aspetta qualche minuto e riprova.',
+  'That link has expired or was already used. Ask for a new one.': 'Il link è scaduto o è già stato usato. Richiedine uno nuovo.',
 }

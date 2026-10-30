@@ -10,23 +10,25 @@ import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
+import { a } from '../lib/admin-i18n.js'
+import { SUPA } from '../lib/supa-auth.js'
 import '../admin.css'
 
 // Admin-only operator dashboard (owner passkey + admin flag; guarded again server-side).
-// Deliberately English-only — it isn't part of the translated end-user surface, so it stays
-// out of the per-language string packs.
+// Out of the per-language string packs, as upstream keeps it; its words go through a()
+// (lib/admin-i18n.js), which shows them in Portuguese when the app is in pt or pt-BR.
 //
 // One page of cards, each opening with a sentence that says what it is for. An operator who
 // looks at this twice a year should not have to remember what "synced 3d ago" or an invite
 // code means.
 
 const rel = ts => {
-  if (!ts) return 'never'
+  if (!ts) return a('never')
   const s = Math.max(0, (Date.now() - ts) / 1000)
-  if (s < 60) return 'just now'
-  if (s < 3600) return Math.floor(s / 60) + ' min ago'
-  if (s < 86400) return Math.floor(s / 3600) + ' h ago'
-  return Math.floor(s / 86400) + ' d ago'
+  if (s < 60) return a('just now')
+  if (s < 3600) return a('{0} min ago', Math.floor(s / 60))
+  if (s < 86400) return a('{0} h ago', Math.floor(s / 3600))
+  return a('{0} d ago', Math.floor(s / 86400))
 }
 const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min' }
 
@@ -34,26 +36,27 @@ const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60
 // before it has been copied or written down.
 function ResetCodeSheet({ name, email, code, expires, close }) {
   const toast = useUI(s => s.toast)
-  const copy = () => { navigator.clipboard?.writeText(code).catch(() => {}); toast('Copied') }
+  const copy = () => { navigator.clipboard?.writeText(code).catch(() => {}); toast(a('Copied')) }
   return <>
     <h3>Reset code for {name}</h3>
     <div className="adm-lead">Give them this code. They choose “Sign in with password” → “Have a reset code from your admin?”, enter their name <b>{name}</b>{email && <> (or their sign-in e-mail <b>{email}</b>)</>}, the code and a new password. It works once, until {new Date(expires).toLocaleString()}, and will not be shown again.</div>
-    <button className="adm-code" style={{ fontSize: 22, width: '100%', padding: '14px 0' }} onClick={copy} aria-label="copy code">{code}</button>
+    <button className="adm-code" style={{ fontSize: 22, width: '100%', padding: '14px 0' }} onClick={copy} aria-label={a('copy code')}>{code}</button>
     <div style={{ height: 12 }} />
-    <Button variant="primary" onClick={close}>Done</Button>
+    <Button variant="primary" onClick={close}>{a('Done')}</Button>
   </>
 }
 
 // The one time a recovery code (#584) is visible. Locked like the reset code's sheet.
 function RecoveryCodeSheet({ name, code, expires, close }) {
   const toast = useUI(s => s.toast)
-  const copy = () => { navigator.clipboard?.writeText(code).catch(() => {}); toast('Copied') }
+  const copy = () => { navigator.clipboard?.writeText(code).catch(() => {}); toast(a('Copied')) }
   return <>
-    <h3>Recovery code for {name}</h3>
-    <div className="adm-lead">Give them this code. On the sign-in screen they tap “Lost access?” → “I have a code” (or “Use a code from your other device”) and enter it; the device they use gets a new passkey for <b>{name}</b> and is signed in. In the phone app they do this in a browser first, then pair the app again. It works once, until {new Date(expires).toLocaleString()}, and will not be shown again.</div>
-    <button className="adm-code" style={{ fontSize: 22, width: '100%', padding: '14px 0' }} onClick={copy} aria-label="copy code">{code}</button>
+    <h3>{SUPA ? a('Recovery link for {0}', name) : <>Recovery code for {name}</>}</h3>
+    {SUPA ? <div className="adm-lead">{a('Send this link to {0}. Opening it signs them in and lets them choose a new password. It works once, until {1}, and will not be shown again.', name, new Date(expires).toLocaleString())}</div>
+    : <div className="adm-lead">Give them this code. On the sign-in screen they tap “Lost access?” → “I have a code” (or “Use a code from your other device”) and enter it; the device they use gets a new passkey for <b>{name}</b> and is signed in. In the phone app they do this in a browser first, then pair the app again. It works once, until {new Date(expires).toLocaleString()}, and will not be shown again.</div>}
+    <button className="adm-code" style={{ fontSize: SUPA ? 12 : 22, width: '100%', padding: '14px 0', wordBreak: 'break-all' }} onClick={copy} aria-label={a('copy code')}>{code}</button>
     <div style={{ height: 12 }} />
-    <Button variant="primary" onClick={close}>Done</Button>
+    <Button variant="primary" onClick={close}>{a('Done')}</Button>
   </>
 }
 
@@ -63,7 +66,7 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
   const toast = useUI(s => s.toast)
   const openSheet = useUI(s => s.openSheet)
   useEffect(() => { api('/api/admin/user?id=' + encodeURIComponent(id)).then(setD).catch(e => toast(e.message)) }, [id])
-  if (!d) return <div className="muted small">Loading…</div>
+  if (!d) return <div className="muted small">{a('Loading…')}</div>
   const u = d.user
   // The document comes straight off the user's state file. PUT /api/data drops null and
   // shapeless entries now, but a file written before it did still answers with them, and this
@@ -76,30 +79,30 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
     const blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `opengym-${u.name.replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase()}-${u.id}.json`
+    a.download = `steelday-${u.name.replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase()}-${u.id}.json`
     document.body.appendChild(a); a.click(); a.remove()
     setTimeout(() => URL.revokeObjectURL(a.href), 1000)
   }
   const doDelete = () => {
     api('/api/admin/user/delete', { method: 'POST', body: JSON.stringify({ id: u.id }) })
-      .then(() => { toast('Account deleted'); onChanged(); close() })
+      .then(() => { toast(a('Account deleted')); onChanged(); close() })
       .catch(e => toast(e.message))
   }
   const setDisabled = disabled => {
     api('/api/admin/user/disable', { method: 'POST', body: JSON.stringify({ id: u.id, disabled }) })
-      .then(() => { toast(disabled ? 'User disabled' : 'User enabled'); onChanged(); close() })
+      .then(() => { toast(disabled ? a('User disabled') : a('User enabled')); onChanged(); close() })
       .catch(e => toast(e.message))
   }
   // One owner, any number of admins: only the owner appoints, removes or hands the role on.
   const setRole = admin => api('/api/admin/user/role', { method: 'POST', body: JSON.stringify({ id: u.id, admin }) })
-    .then(() => { toast(admin ? u.name + ' is an admin now' : u.name + ' is no longer an admin'); onChanged(); close() })
+    .then(() => { toast(admin ? a('{0} is an admin now', u.name) : a('{0} is no longer an admin', u.name)); onChanged(); close() })
     .catch(e => toast(e.message))
   const makeOwner = () => confirmSheet({
-    title: 'Make ' + u.name + ' the owner?',
-    message: 'They get everything you can do here, including removing admins and clearing the activity log. You stay an admin, but only they can change that.',
-    confirmText: 'Hand it over', danger: true,
+    title: a('Make {0} the owner?', u.name),
+    message: a('They get everything you can do here, including removing admins and clearing the activity log. You stay an admin, but only they can change that.'),
+    confirmText: a('Hand it over'), danger: true,
     onConfirm: () => api('/api/admin/owner', { method: 'POST', body: JSON.stringify({ id: u.id }) })
-      .then(() => { toast(u.name + ' owns this instance now'); onChanged(); close() })
+      .then(() => { toast(a('{0} owns this instance now', u.name)); onChanged(); close() })
       .catch(e => toast(e.message)),
   })
   // Password sign-in (#118): the server only sends `password` when the instance offers it. The
@@ -118,9 +121,10 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
   // the owner's own comes from the server command (recover.js). Not for oneself.
   const canRecover = !u.owner && !u.disabled && u.id !== me?.id && (!u.admin || viewerOwner)
   const makeRecovery = () => confirmSheet({
-    title: 'Recovery code for ' + u.name + '?',
-    message: 'For someone who lost every way in: their devices and passkey are gone, and they have no password. You get a one-time code to hand them; the device they enter it on gets a new passkey. They are signed out everywhere now. Their passkeys and password stay. It is shown once and is valid for 24 hours.',
-    confirmText: 'Create recovery code',
+    title: SUPA ? a('Recovery link for {0}?', u.name) : 'Recovery code for ' + u.name + '?',
+    message: SUPA ? a('For someone who cannot sign in any more: a one-time link that signs them in and lets them set a new password. It is shown once and is valid for one hour.')
+      : 'For someone who lost every way in: their devices and passkey are gone, and they have no password. You get a one-time code to hand them; the device they enter it on gets a new passkey. They are signed out everywhere now. Their passkeys and password stay. It is shown once and is valid for 24 hours.',
+    confirmText: SUPA ? a('Create recovery link') : 'Create recovery code',
     danger: true,
     onConfirm: () => api('/api/admin/user/recovery', { method: 'POST', body: JSON.stringify({ id: u.id }) })
       .then(r => { onChanged(); close(); openSheet(done => <RecoveryCodeSheet name={r.name} code={r.code} expires={r.expires} close={done} />, { locked: true }) })
@@ -129,60 +133,60 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
   return <>
     <h3 className="capitalize">{u.name}</h3>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '8px 0 12px' }}>
-      {u.owner ? <span className="adm-pill acc">owner</span> : u.admin && <span className="adm-pill acc">admin</span>}
-      {u.disabled && <span className="adm-pill bad">disabled</span>}
-      {u.invitedBy && <span className="adm-pill">invite {u.invitedBy}</span>}
+      {u.owner ? <span className="adm-pill acc">{a('owner')}</span> : u.admin && <span className="adm-pill acc">{a('admin')}</span>}
+      {u.disabled && <span className="adm-pill bad">{a('disabled')}</span>}
+      {u.invitedBy && <span className="adm-pill">{a('invite {0}', u.invitedBy)}</span>}
       {u.password && <span className="adm-pill">password</span>}
       {/* The sign-in e-mail (password instances only): shown to admins and nobody else. */}
-      {u.email && <span className="adm-pill" title="sign-in e-mail">{u.email}</span>}
+      {u.email && <span className="adm-pill" title={a('sign-in e-mail')}>{u.email}</span>}
       {u.resetUntil && <span className="adm-pill acc">reset code until {new Date(u.resetUntil).toLocaleString()}</span>}
       {u.recoveryUntil && <span className="adm-pill acc">recovery code until {new Date(u.recoveryUntil).toLocaleString()}</span>}
-      <span className="adm-pill">joined {u.created ? fmtDate(u.created.slice(0, 10)) : '–'}</span>
+      <span className="adm-pill">{a('joined {0}', u.created ? fmtDate(u.created.slice(0, 10)) : '–')}</span>
     </div>
     <div className="tiles" style={{ textAlign: 'start' }}>
-      <div className="tile"><div className="l">Workouts</div><div className="v" style={{ fontSize: '1.1rem' }}>{workouts.length}</div></div>
-      <div className="tile"><div className="l">Weigh-ins</div><div className="v" style={{ fontSize: '1.1rem' }}>{d.bodyweight.length}</div></div>
-      <div className="tile"><div className="l">Measurements</div><div className="v" style={{ fontSize: '1.1rem' }}>{(d.measurements || []).length}</div></div>
-      <div className="tile"><div className="l">Routines</div><div className="v" style={{ fontSize: '1.1rem' }}>{d.routines.length}</div></div>
-      <div className="tile"><div className="l">Last sync</div><div className="v" style={{ fontSize: '.95rem' }}>{rel(d.lastSync)}</div></div>
+      <div className="tile"><div className="l">{a('Workouts')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{workouts.length}</div></div>
+      <div className="tile"><div className="l">{a('Weigh-ins')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{d.bodyweight.length}</div></div>
+      <div className="tile"><div className="l">{a('Measurements')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{(d.measurements || []).length}</div></div>
+      <div className="tile"><div className="l">{a('Routines')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{d.routines.length}</div></div>
+      <div className="tile"><div className="l">{a('Last sync')}</div><div className="v" style={{ fontSize: '.95rem' }}>{rel(d.lastSync)}</div></div>
     </div>
     {viewerOwner && !u.owner && !u.disabled && <>
       <button className="btn" style={{ margin: '12px 0 4px' }}
         onClick={() => u.admin
-          ? confirmSheet({ title: 'Remove ' + u.name + ' as admin?', message: 'They keep their account and data, but lose this page.', confirmText: 'Remove admin', danger: true, onConfirm: () => setRole(false) })
-          : confirmSheet({ title: 'Make ' + u.name + ' an admin?', message: 'They can see everyone on this instance, disable accounts, hand out invites and set up the Coach. Only you can add or remove admins.', confirmText: 'Make admin', onConfirm: () => setRole(true) })}>
-        {u.admin ? 'Remove admin' : 'Make admin'}</button>
-      <div className="adm-hint">{u.admin ? 'Admins run the instance with you. Remove the role to delete or disable their account.' : 'Admins help run the instance. You stay the owner.'}</div>
+          ? confirmSheet({ title: a('Remove {0} as admin?', u.name), message: a('They keep their account and data, but lose this page.'), confirmText: a('Remove admin'), danger: true, onConfirm: () => setRole(false) })
+          : confirmSheet({ title: a('Make {0} an admin?', u.name), message: a('They can see everyone on this instance, disable accounts, hand out invites and set up the Coach. Only you can add or remove admins.'), confirmText: a('Make admin'), onConfirm: () => setRole(true) })}>
+        {u.admin ? a('Remove admin') : a('Make admin')}</button>
+      <div className="adm-hint">{u.admin ? a('Admins run the instance with you. Remove the role to delete or disable their account.') : a('Admins help run the instance. You stay the owner.')}</div>
       {u.admin && <>
-        <button className="btn" style={{ margin: '14px 0 4px' }} onClick={makeOwner}>Make owner</button>
-        <div className="adm-hint">There is one owner. Handing it over makes you a regular admin.</div>
+        <button className="btn" style={{ margin: '14px 0 4px' }} onClick={makeOwner}>{a('Make owner')}</button>
+        <div className="adm-hint">{a('There is one owner. Handing it over makes you a regular admin.')}</div>
       </>}
     </>}
     {!u.admin && <>
       <button className={'btn ' + (u.disabled ? 'primary' : 'danger')} style={{ margin: '12px 0 4px' }}
         onClick={() => u.disabled ? setDisabled(false)
-          : confirmSheet({ title: 'Disable ' + u.name + '?', message: 'They are signed out everywhere and can no longer sync or log in until re-enabled. Their data stays.', confirmText: 'Disable', danger: true, onConfirm: () => setDisabled(true) })}>
-        {u.disabled ? 'Enable account' : 'Disable account'}</button>
-      <div className="adm-hint">{u.disabled ? 'Enabling lets them sign in and sync again.' : 'Disabling signs them out everywhere and blocks sign-in. Nothing is deleted.'}</div>
+          : confirmSheet({ title: a('Disable {0}?', u.name), message: a('They are signed out everywhere and can no longer sync or log in until re-enabled. Their data stays.'), confirmText: a('Disable'), danger: true, onConfirm: () => setDisabled(true) })}>
+        {u.disabled ? a('Enable account') : a('Disable account')}</button>
+      <div className="adm-hint">{u.disabled ? a('Enabling lets them sign in and sync again.') : a('Disabling signs them out everywhere and blocks sign-in. Nothing is deleted.')}</div>
       {/* The one destructive action in the app (issue #107), so it asks twice and offers the
           export first — that history is theirs. The second step names the account again, because
           the first sheet can be dismissed by anyone who was not reading. */}
       <button className="btn danger" style={{ margin: '14px 0 4px' }}
         onClick={() => confirmSheet({
-          title: 'Delete ' + u.name + '?',
-          message: 'Everything goes: their workouts, weigh-ins, routines, passkeys and notifications. This cannot be undone, and the invite code they joined with stays used. Download their data first if they might want it.',
-          confirmText: 'Continue',
+          title: a('Delete {0}?', u.name),
+          message: a('Everything goes: their workouts, weigh-ins, routines, passkeys and notifications. This cannot be undone, and the invite code they joined with stays used. Download their data first if they might want it.'),
+          confirmText: a('Continue'),
           danger: true,
           onConfirm: () => confirmSheet({
-            title: 'Delete ' + u.name + ' for good?',
-            message: 'Last chance. There’s no undo and no backup of this on the server.',
-            confirmText: 'Delete account',
+            title: a('Delete {0} for good?', u.name),
+            message: a('Last chance. There’s no undo and no backup of this on the server.'),
+            confirmText: a('Delete account'),
             danger: true,
             onConfirm: doDelete,
           }),
-        })}>Delete account</button>
-      <button className="btn" style={{ marginBottom: 4 }} onClick={exportUser}>Download their data</button>
-      <div className="adm-hint">Deleting removes the account and every trace of its training history from this server.</div>
+        })}>{a('Delete account')}</button>
+      <button className="btn" style={{ marginBottom: 4 }} onClick={exportUser}>{a('Download their data')}</button>
+      <div className="adm-hint">{a('Deleting removes the account and every trace of its training history from this server.')}</div>
       {pwInstance && <>
         <button className="btn" style={{ margin: '14px 0 4px' }} onClick={resetPassword}>Reset password</button>
         <div className="adm-hint">{u.password
@@ -191,60 +195,61 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
       </>}
     </>}
     {canRecover && <>
-      <button className="btn" style={{ margin: '14px 0 4px' }} onClick={makeRecovery}>Recovery code</button>
-      <div className="adm-hint">Lost every device and passkey? A one-time code gives a new device a passkey for this profile. Works with or without password sign-in.</div>
+      <button className="btn" style={{ margin: '14px 0 4px' }} onClick={makeRecovery}>{SUPA ? a('Recovery link') : 'Recovery code'}</button>
+      <div className="adm-hint">{SUPA ? a('Lost the password and the e-mail link does not arrive? A one-time link you hand over lets them in to set a new one.') : 'Lost every device and passkey? A one-time code gives a new device a passkey for this profile. Works with or without password sign-in.'}</div>
     </>}
-    {u.owner && u.id !== me?.id && <div className="adm-hint" style={{ marginTop: 14 }}>A locked-out owner gets a recovery code from the server itself: <code>docker compose exec api node recover.js "{u.name}"</code></div>}
-    <h4 className="sec">Workout history</h4>
+    {u.owner && u.id !== me?.id && SUPA && <div className="adm-hint" style={{ marginTop: 14 }}>{a('The owner gets back in with “Forgot your password?” on the sign-in screen.')}</div>}
+    {u.owner && u.id !== me?.id && !SUPA && <div className="adm-hint" style={{ marginTop: 14 }}>A locked-out owner gets a recovery code from the server itself: <code>docker compose exec api node recover.js "{u.name}"</code></div>}
+    <h4 className="sec">{a('Workout history')}</h4>
     {workouts.length ? <div className="list" style={{ gap: 0 }}>
       {workouts.slice(0, 60).map(w => <div key={w.id} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
         <div><div className="small" style={{ fontWeight: 600 }}>{w.name}</div>
-          <div className="dim" style={{ fontSize: '.72rem' }}>{fmtDate(w.d, true)} · {fmtDur((w.end || w.start) - w.start)} · {setsDone(w)} sets{w.prs?.length ? ' · ' + w.prs.length + ' PR' : ''}</div></div>
+          <div className="dim" style={{ fontSize: '.72rem' }}>{fmtDate(w.d, true)} · {fmtDur((w.end || w.start) - w.start)} · {a('{0} sets', setsDone(w))}{w.prs?.length ? ' · ' + w.prs.length + ' PR' : ''}</div></div>
         <span className="small muted">{fmtVol(w.vol ?? workoutVolume(w), d.unit)}</span>
       </div>)}
-    </div> : <div className="adm-empty">No workouts logged.</div>}
+    </div> : <div className="adm-empty">{a('No workouts logged.')}</div>}
   </>
 }
 
 function InvitesCard({ invites, reload, inviteOnly }) {
   const toast = useUI(s => s.toast)
   const gen = () => api('/api/admin/invites/new', { method: 'POST', body: '{}' })
-    .then(({ invite }) => { navigator.clipboard?.writeText(invite.code).catch(() => {}); toast('Code ' + invite.code + ' created & copied'); reload() })
+    .then(({ invite }) => { navigator.clipboard?.writeText(invite.code).catch(() => {}); toast(a('Code {0} created & copied', invite.code)); reload() })
     .catch(e => toast(e.message))
   const revoke = code => confirmSheet({
-    title: 'Revoke code ' + code + '?', message: 'Anyone who has it can no longer use it. People who already signed up with it are not affected.',
-    confirmText: 'Revoke', danger: true,
+    title: a('Revoke code {0}?', code), message: a('Anyone who has it can no longer use it. People who already signed up with it are not affected.'),
+    confirmText: a('Revoke'), danger: true,
     onConfirm: () => api('/api/admin/invites/revoke', { method: 'POST', body: JSON.stringify({ code }) })
-      .then(() => { toast('Code revoked'); reload() }).catch(e => toast(e.message))
+      .then(() => { toast(a('Code revoked')); reload() }).catch(e => toast(e.message))
   })
-  const copy = code => { navigator.clipboard?.writeText(code).catch(() => {}); toast('Copied ' + code) }
+  const copy = code => { navigator.clipboard?.writeText(code).catch(() => {}); toast(a('Copied {0}', code)) }
   const open = (invites || []).filter(i => !i.usedBy)
   const used = (invites || []).filter(i => i.usedBy)
   return <div className="card">
-    <div className="row between"><h2 style={{ margin: 0 }}>Invite codes</h2>
-      <Button variant="primary" size="sm" onClick={gen} icon="plus">New code</Button></div>
+    <div className="row between"><h2 style={{ margin: 0 }}>{a('Invite codes')}</h2>
+      <Button variant="primary" size="sm" onClick={gen} icon="plus">{a('New code')}</Button></div>
     <div className="adm-lead">
       {inviteOnly
-        ? 'Sign-up is invite-only: someone needs one of these codes to create a profile. Each code works once.'
-        : 'Sign-up is open, so codes are optional here. They only record who invited whom.'}
+        ? a('Sign-up is invite-only: someone needs one of these codes to create a profile. Each code works once.')
+        : a('Sign-up is open, so codes are optional here. They only record who invited whom.')}
     </div>
     {open.length ? <>
-      <div className="adm-group-t">Unused · tap to copy</div>
+      <div className="adm-group-t">{a('Unused · tap to copy')}</div>
       {open.map(i => <div key={i.code} className="row between" style={{ padding: '6px 0', borderBottom: 'var(--hair) solid var(--sep)' }}>
-        <button className="adm-code" onClick={() => copy(i.code)} aria-label={'copy ' + i.code}>{i.code}</button>
+        <button className="adm-code" onClick={() => copy(i.code)} aria-label={a('copy') + ' ' + i.code}>{i.code}</button>
         <div className="row" style={{ gap: 4 }}>
-          <button className="iconbtn adm-iconbtn" onClick={() => copy(i.code)} aria-label="copy"><Icon name="copy" /></button>
-          <button className="iconbtn adm-iconbtn" style={{ color: 'var(--red)' }} onClick={() => revoke(i.code)} aria-label="revoke"><Icon name="trash" /></button>
+          <button className="iconbtn adm-iconbtn" onClick={() => copy(i.code)} aria-label={a('copy')}><Icon name="copy" /></button>
+          <button className="iconbtn adm-iconbtn" style={{ color: 'var(--red)' }} onClick={() => revoke(i.code)} aria-label={a('revoke')}><Icon name="trash" /></button>
         </div>
       </div>)}
     </> : null}
     {used.length ? <>
-      <div className="adm-group-t" style={{ marginTop: open.length ? 12 : 0 }}>Already used</div>
+      <div className="adm-group-t" style={{ marginTop: open.length ? 12 : 0 }}>{a('Already used')}</div>
       {used.map(i => <div key={i.code} className="row between dim" style={{ padding: '6px 0', fontSize: '.82rem' }}>
-        <span style={{ fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', letterSpacing: '.06em' }}>{i.code}</span><span>→ {i.usedByName || 'used'}</span>
+        <span style={{ fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', letterSpacing: '.06em' }}>{i.code}</span><span>→ {i.usedByName || a('used')}</span>
       </div>)}
     </> : null}
-    {!open.length && !used.length && <div className="adm-empty">No codes yet. "New code" makes one and copies it to your clipboard.</div>}
+    {!open.length && !used.length && <div className="adm-empty">{a('No codes yet. "New code" makes one and copies it to your clipboard.')}</div>}
   </div>
 }
 
@@ -266,27 +271,27 @@ function AuditCard({ tick, owner }) {
   useEffect(() => { load(cat) }, [tick])
 
   const clear = () => confirmSheet({
-    title: 'Clear the activity log?',
-    message: 'Every recorded event is deleted. The clear itself is logged, so the gap stays visible.',
-    confirmText: 'Clear', danger: true,
+    title: a('Clear the activity log?'),
+    message: a('Every recorded event is deleted. The clear itself is logged, so the gap stays visible.'),
+    confirmText: a('Clear'), danger: true,
     onConfirm: () => api('/api/admin/audit/clear', { method: 'POST', body: '{}' })
-      .then(() => { toast('Activity log cleared'); pick(cat) }).catch(e => toast(e.message))
+      .then(() => { toast(a('Activity log cleared')); pick(cat) }).catch(e => toast(e.message))
   })
 
   if (meta && !meta.enabled) return null      // AUDIT_LOG=0 — the card isn't there at all
 
   return <div className="card">
-    <div className="row between"><h2 style={{ margin: 0 }}>Activity log</h2>
+    <div className="row between"><h2 style={{ margin: 0 }}>{a('Activity log')}</h2>
       {/* Clearing is the owner's alone: an admin could otherwise erase what they did. */}
-      {owner && <button className="iconbtn adm-iconbtn" style={{ color: 'var(--red)' }} onClick={clear} aria-label="clear log"><Icon name="trash" /></button>}</div>
+      {owner && <button className="iconbtn adm-iconbtn" style={{ color: 'var(--red)' }} onClick={clear} aria-label={a('clear log')}><Icon name="trash" /></button>}</div>
     <div className="adm-lead">
-      Who signed in, what failed, and what an admin changed.
-      {meta ? ' ' + fmtNum(meta.total) + ' events'
-        + (meta.retention.days ? ', kept for ' + meta.retention.days + ' days' : '')
-        + (meta.ip_mode === 'off' ? ', without IP addresses' : '') + '.' : ''}
+      {a('Who signed in, what failed, and what an admin changed.')}
+      {meta ? ' ' + a('{0} events', fmtNum(meta.total))
+        + (meta.retention.days ? a(', kept for {0} days', meta.retention.days) : '')
+        + (meta.ip_mode === 'off' ? a(', without IP addresses') : '') + '.' : ''}
     </div>
     <div className="chips" style={{ marginBottom: 10 }}>
-      {[['', 'All'], ['auth', 'Sign-ins'], ['admin', 'Admin'], ['fail', 'Failed']].map(([v, l]) =>
+      {[['', a('All')], ['auth', a('Sign-ins')], ['admin', a('Admin')], ['fail', a('Failed')]].map(([v, l]) =>
         <button key={v} className={'chip' + (cat === v ? ' on' : '')} onClick={() => pick(v)}>{l}</button>)}
     </div>
     {rows.map(e => {
@@ -295,16 +300,16 @@ function AuditCard({ tick, owner }) {
         <div className="grow">
           <div className="small" style={{ fontWeight: 600 }}>{line.title}
             {/* a red pill, not a red row: twenty fumbled Face IDs in a row shouldn't read as an incident */}
-            {!e.ok && <span className="adm-pill bad" style={{ marginInlineStart: 6 }}>failed</span>}
-            {auditCat(e.ev) === 'admin' && <span className="adm-pill acc" style={{ marginInlineStart: 6 }}>admin</span>}</div>
+            {!e.ok && <span className="adm-pill bad" style={{ marginInlineStart: 6 }}>{a('failed')}</span>}
+            {auditCat(e.ev) === 'admin' && <span className="adm-pill acc" style={{ marginInlineStart: 6 }}>{a('admin')}</span>}</div>
           {line.sub && <div className="dim" style={{ fontSize: '.72rem' }}>{line.sub}</div>}
         </div>
         <span className="small muted" style={{ flex: 'none', marginInlineStart: 8 }}>{fmtWhen(e.ts, meta?.now)}</span>
       </div>
     })}
-    {meta && !rows.length && <div className="adm-empty">Nothing logged yet.</div>}
+    {meta && !rows.length && <div className="adm-empty">{a('Nothing logged yet.')}</div>}
     {meta?.nextBefore && <div style={{ marginTop: 10 }}>
-      <Button size="sm" onClick={() => load(cat, meta.nextBefore)}>Show more</Button></div>}
+      <Button size="sm" onClick={() => load(cat, meta.nextBefore)}>{a('Show more')}</Button></div>}
   </div>
 }
 
@@ -333,10 +338,10 @@ export default function Admin() {
   // trying; a list that did load stays up, marked as the last one that came through.
   const loadUsers = () => api('/api/admin/users')
     .then(d => {
-      if (!Array.isArray(d?.users)) throw new Error('The server answered without a list of users.')
+      if (!Array.isArray(d?.users)) throw new Error(a('The server answered without a list of users.'))
       setUsers(d.users); setInviteOnly(!!d.invite_only); setUsersErr(null)
     })
-    .catch(e => setUsersErr(e.message || 'Failed to load'))
+    .catch(e => setUsersErr(e.message || a('Failed to load')))
   const loadInvites = () => api('/api/admin/invites').then(d => setInvites(d.invites)).catch(() => {})
   // poll every 15s so the "training now" section stays live without a manual refresh
   useEffect(() => { if (!user?.admin) return; loadUsers(); loadInvites(); const iv = setInterval(loadUsers, 15000); return () => clearInterval(iv) }, [])
@@ -351,36 +356,36 @@ export default function Admin() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" data-back="/settings/account" onClick={() => nav('/settings/account')} aria-label="Back"><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" data-back="/settings/account" onClick={() => nav('/settings/account')} aria-label={a('Back')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, marginInlineStart: 12 }}><h1 style={{ margin: 0 }}>Admin</h1>
-        <div className="sub">{users ? users.length + ' users · ' + activeCount + ' active this week' : usersErr ? 'Could not load' : 'Loading…'}</div></div>
-      <button className="iconbtn" onClick={() => { loadUsers(); loadInvites(); setTick(n => n + 1) }} aria-label="refresh">↻</button>
+        <div className="sub">{users ? a('{0} users · {1} active this week', users.length, activeCount) : usersErr ? a('Could not load') : a('Loading…')}</div></div>
+      <button className="iconbtn" onClick={() => { loadUsers(); loadInvites(); setTick(n => n + 1) }} aria-label={a('refresh')}>↻</button>
     </div>
     <div className="adm-intro">
-      Everything about running this instance: who uses it, how they get in, the AI Coach, and what has happened on it. Nothing here shows anyone's training data beyond counts.
+      {a('Everything about running this instance: who uses it, how they get in, the AI Coach, and what has happened on it. Nothing here shows anyone\'s training data beyond counts.')}
     </div>
 
     {usersErr && <div className="card" role="alert" style={{ borderColor: 'var(--red)' }}>
-      <div className="row between"><h2 style={{ margin: 0 }}>{users ? 'The last update failed' : 'Could not load the users'}</h2>
-        <Button size="sm" icon="reset" onClick={loadUsers}>Try again</Button></div>
+      <div className="row between"><h2 style={{ margin: 0 }}>{users ? a('The last update failed') : a('Could not load the users')}</h2>
+        <Button size="sm" icon="reset" onClick={loadUsers}>{a('Try again')}</Button></div>
       <div className="adm-lead" style={{ marginBottom: 0 }}>
-        {usersErr} {users ? 'The list below is the last one that loaded.' : 'It tries again every 15 seconds.'}
+        {usersErr} {users ? a('The list below is the last one that loaded.') : a('It tries again every 15 seconds.')}
       </div>
     </div>}
 
     <div className="tiles" style={{ marginBottom: 12 }}>
-      <div className="tile"><div className="l">Users</div><div className="v">{users ? users.length : '–'}</div></div>
-      <div className="tile"><div className="l">Training now</div><div className="v" style={{ color: liveUsers.length ? 'var(--acc)' : undefined }}>{users ? liveUsers.length : '–'}</div></div>
-      <div className="tile"><div className="l">Active 7 days</div><div className="v">{users ? activeCount : '–'}</div></div>
-      <div className="tile"><div className="l">Disabled</div><div className="v">{users ? disabledCount : '–'}</div></div>
+      <div className="tile"><div className="l">{a('Users')}</div><div className="v">{users ? users.length : '–'}</div></div>
+      <div className="tile"><div className="l">{a('Training now')}</div><div className="v" style={{ color: liveUsers.length ? 'var(--acc)' : undefined }}>{users ? liveUsers.length : '–'}</div></div>
+      <div className="tile"><div className="l">{a('Active 7 days')}</div><div className="v">{users ? activeCount : '–'}</div></div>
+      <div className="tile"><div className="l">{a('Disabled')}</div><div className="v">{users ? disabledCount : '–'}</div></div>
     </div>
 
     {liveUsers.length > 0 && <div className="card" style={{ borderColor: 'var(--acc)' }}>
-      <h2 className="row" style={{ margin: '0 0 2px', gap: 6 }}><Icon name="dot" style={{ fontSize: 10, color: 'var(--green)' }} />Training now</h2>
-      <div className="adm-lead">Sessions running at this moment. Tap a name for details.</div>
+      <h2 className="row" style={{ margin: '0 0 2px', gap: 6 }}><Icon name="dot" style={{ fontSize: 10, color: 'var(--green)' }} />{a('Training now')}</h2>
+      <div className="adm-lead">{a('Sessions running at this moment. Tap a name for details.')}</div>
       {liveUsers.map(u => <div key={u.id} className="row between" style={{ padding: '8px 2px', borderBottom: 'var(--hair) solid var(--sep)' }} onClick={() => openUser(u.id)}>
         <div><div className="small" style={{ fontWeight: 600 }}>{u.name}</div>
-          <div className="dim" style={{ fontSize: '.72rem' }}>{u.live.name} · exercise {u.live.exIdx} of {u.live.exTotal} · {u.live.setsDone}/{u.live.setsTotal} sets</div></div>
+          <div className="dim" style={{ fontSize: '.72rem' }}>{a('{0} · exercise {1} of {2} · {3}/{4} sets', u.live.name, u.live.exIdx, u.live.exTotal, u.live.setsDone, u.live.setsTotal)}</div></div>
         <span className="adm-pill acc">{dur(Date.now() - u.live.startedAt)}</span>
       </div>)}
     </div>}
@@ -392,16 +397,16 @@ export default function Admin() {
     <InvitesCard invites={invites} reload={loadInvites} inviteOnly={inviteOnly} />
 
     <div className="card">
-      <h2 style={{ margin: 0 }}>Users</h2>
-      <div className="adm-lead">Everyone with a profile on this instance. Tap one to see their activity, to disable the account (nothing is deleted) or to delete it with all their data for good.</div>
+      <h2 style={{ margin: 0 }}>{a('Users')}</h2>
+      <div className="adm-lead">{a('Everyone with a profile on this instance. Tap one to see their activity, to disable the account (nothing is deleted) or to delete it with all their data for good.')}</div>
       <div className="list">
         {(users || []).map(u => <div key={u.id} className="item" onClick={() => openUser(u.id)} style={u.disabled ? { opacity: .55 } : null}>
-          <div className="grow"><div className="tt">{u.live && <Icon name="dot" style={{ fontSize: 9, color: 'var(--green)', display: 'inline-block', marginInlineEnd: 5 }} />}{u.name} {u.admin && <span className="adm-pill acc" style={{ marginInlineStart: 4 }}>{u.owner ? 'owner' : 'admin'}</span>}{u.disabled && <span className="adm-pill bad" style={{ marginInlineStart: 4 }}>disabled</span>}</div>
-            <div className="ss">{u.live ? 'training now · ' + u.live.name : u.workouts + ' workouts' + (u.lastWorkout ? ' · last ' + fmtDate(u.lastWorkout) : '') + ' · last sync ' + rel(u.lastSync)}</div>
-            {u.email && <div className="ss" title="sign-in e-mail">{u.email}</div>}</div>
-          {u.hasPush && <Icon name="bell" title="push notifications on" style={{ fontSize: 15, color: 'var(--label-3)' }} />}<Icon name="chevronRight" className="chev" />
+          <div className="grow"><div className="tt">{u.live && <Icon name="dot" style={{ fontSize: 9, color: 'var(--green)', display: 'inline-block', marginInlineEnd: 5 }} />}{u.name} {u.admin && <span className="adm-pill acc" style={{ marginInlineStart: 4 }}>{u.owner ? a('owner') : a('admin')}</span>}{u.disabled && <span className="adm-pill bad" style={{ marginInlineStart: 4 }}>{a('disabled')}</span>}</div>
+            <div className="ss">{u.live ? a('training now · {0}', u.live.name) : a('{0} workouts', u.workouts) + (u.lastWorkout ? a(' · last {0}', fmtDate(u.lastWorkout)) : '') + a(' · last sync {0}', rel(u.lastSync))}</div>
+            {u.email && <div className="ss" title={a('sign-in e-mail')}>{u.email}</div>}</div>
+          {u.hasPush && <Icon name="bell" title={a('push notifications on')} style={{ fontSize: 15, color: 'var(--label-3)' }} />}<Icon name="chevronRight" className="chev" />
         </div>)}
-        {users && !users.length && <div className="adm-empty">No users yet.</div>}
+        {users && !users.length && <div className="adm-empty">{a('No users yet.')}</div>}
       </div>
     </div>
 

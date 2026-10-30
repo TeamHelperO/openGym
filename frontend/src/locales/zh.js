@@ -2598,4 +2598,6 @@ export default {
   'Enter your e-mail address.': '请输入你的邮箱地址。',
   'Wrong e-mail or password.': '邮箱或密码错误。',
   'Confirm your e-mail first. Open the link we sent you.': '请先确认你的邮箱。打开我们发送的链接。',
+  'Too many attempts. Wait a few minutes and try again.': '尝试次数过多。请等几分钟后再试。',
+  'That link has expired or was already used. Ask for a new one.': '该链接已过期或已被使用。请重新获取。',
 }

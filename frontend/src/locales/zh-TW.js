@@ -2591,4 +2591,6 @@ export default {
   'Enter your e-mail address.': '請輸入你的電子郵件地址。',
   'Wrong e-mail or password.': '電子郵件或密碼錯誤。',
   'Confirm your e-mail first. Open the link we sent you.': '請先確認你的電子郵件。開啟我們寄出的連結。',
+  'Too many attempts. Wait a few minutes and try again.': '嘗試次數過多。請等幾分鐘後再試。',
+  'That link has expired or was already used. Ask for a new one.': '此連結已過期或已被使用。請重新取得。',
 }

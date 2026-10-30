@@ -2677,4 +2677,6 @@ export default {
   'Enter your e-mail address.': 'আপনার ইমেল ঠিকানা লিখুন।',
   'Wrong e-mail or password.': 'ইমেল বা পাসওয়ার্ড ভুল।',
   'Confirm your e-mail first. Open the link we sent you.': 'আগে আপনার ইমেল নিশ্চিত করুন। আমাদের পাঠানো লিংক খুলুন।',
+  'Too many attempts. Wait a few minutes and try again.': 'অনেক বেশি চেষ্টা। কয়েক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।',
+  'That link has expired or was already used. Ask for a new one.': 'এই লিংকের মেয়াদ শেষ বা এটি আগেই ব্যবহৃত হয়েছে। নতুন একটি চান।',
 }

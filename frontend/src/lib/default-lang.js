@@ -47,8 +47,11 @@ const CACHE_KEY = 'gym_default_lang'
 export function rememberDefaultLang(config) {
   try { localStorage.setItem(CACHE_KEY, typeof config?.default_lang === 'string' ? config.default_lang : '') } catch { /* ignore */ }
 }
+// A build can name its server's default language (VITE_DEFAULT_LANG, e.g. pt-BR on SteelDay): it
+// stands in until this device has seen /api/config once, so the very first screen is already in it.
+const BUILD_DEFAULT = (import.meta.env && import.meta.env.VITE_DEFAULT_LANG) || null
 function cachedDefaultLang() {
-  try { return localStorage.getItem(CACHE_KEY) } catch { return null }
+  try { return localStorage.getItem(CACHE_KEY) ?? BUILD_DEFAULT } catch { return BUILD_DEFAULT }
 }
 
 /**

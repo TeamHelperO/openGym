@@ -2601,4 +2601,6 @@ export default {
   'Enter your e-mail address.': 'Add meg az e-mail-címedet.',
   'Wrong e-mail or password.': 'Hibás e-mail vagy jelszó.',
   'Confirm your e-mail first. Open the link we sent you.': 'Előbb erősítsd meg az e-mail-címedet. Nyisd meg a küldött linket.',
+  'Too many attempts. Wait a few minutes and try again.': 'Túl sok próbálkozás. Várj néhány percet, és próbáld újra.',
+  'That link has expired or was already used. Ask for a new one.': 'Ez a link lejárt vagy már felhasználták. Kérj újat.',
 }
