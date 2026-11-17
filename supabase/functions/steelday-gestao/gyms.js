@@ -36,12 +36,23 @@ export function brandOf(g) {
 
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
-export function registerGyms(route, { sql, audit }) {
+export function registerGyms(route, { sql, audit, emailConfirmed }) {
   const gymById = async id => (await sql`select ${sql(GYM_COLS)} from opengym.gyms where id = ${id}`)[0] || null;
 
   route('GET', '/config', 'public', () => saasConfig());
 
   route('GET', '/me', 'user', async ctx => {
+    // A student a trainer invited by e-mail gets in by signing in with that e-mail: once Supabase
+    // has confirmed the address (the invite link does), the waiting row becomes theirs.
+    if (ctx.user.email) {
+      const waiting = await sql`select id from opengym.gym_members where user_id is null and joined_via = 'email' and lower(email) = lower(${ctx.user.email})`;
+      if (waiting.length && await emailConfirmed(ctx.user.id)) {
+        for (const w of waiting) {
+          await sql`update opengym.gym_members m set user_id = ${ctx.user.id}, invite_code = null, updated_at = now()
+            where m.id = ${w.id} and m.user_id is null and not exists (select 1 from opengym.gym_members o where o.gym_id = m.gym_id and o.user_id = ${ctx.user.id})`;
+        }
+      }
+    }
     const rows = await sql`select m.id as member_id, m.role, ${sql(GYM_COLS.map(c => 'g.' + c))}
       from opengym.gym_members m join opengym.gyms g on g.id = m.gym_id
       where m.user_id = ${ctx.user.id} and m.status = 'active' order by g.name`;
@@ -60,7 +71,8 @@ export function registerGyms(route, { sql, audit }) {
     const cfg = saasConfig();
     if (!cfg.publicGymSignup && !ctx.platformAdmin) throw new SaasError(403, 'o cadastro de novas academias está fechado nesta plataforma');
     const b = await ctx.body();
-    const name = str(b.name, 'nome da academia', { max: 120 });
+    const kind = b.kind === 'personal' ? 'personal' : 'academy';
+    const name = str(b.name || (kind === 'personal' ? `Consultoria ${ctx.user.name || ''}`.trim() : ''), kind === 'personal' ? 'nome da consultoria' : 'nome da academia', { max: 120 });
     const base = slugify(b.slug || name);
     const row = {
       name,
@@ -72,7 +84,7 @@ export function registerGyms(route, { sql, audit }) {
       await tx`select pg_advisory_xact_lock(hashtext('opengym.gym-slug'))`;
       let slug = base;
       for (let i = 2; (await tx`select 1 from opengym.gyms where slug = ${slug}`).length; i++) slug = `${base}-${i}`;
-      const [g] = await tx`insert into opengym.gyms ${tx({ ...row, slug, created_by: ctx.user.id })} returning id`;
+      const [g] = await tx`insert into opengym.gyms ${tx({ ...row, kind, slug, created_by: ctx.user.id })} returning id`;
       await tx`insert into opengym.gym_members (gym_id, user_id, role, name, email, access_id)
         values (${g.id}, ${ctx.user.id}, 'gym_admin', ${ctx.user.name || 'Administrador'}, ${ctx.user.email || ''}, 1001)`;
       await seedCategories(tx, g.id);

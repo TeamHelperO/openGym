@@ -4,6 +4,7 @@ import { sa } from '../api.js'
 import { useGym } from '../SaasApp.jsx'
 import { useLoad, PageHead, Card, Stat, Loading, LoadError, Money, Table, Empty, Btn } from '../ui.jsx'
 import { money, monthLabel, qty, dateTimeBR } from '../lib/format.js'
+import { isPersonal } from '../product.js'
 
 function Bars({ daily }) {
   if (!daily?.length) return <Empty>Sem lançamentos neste mês.</Empty>
@@ -19,7 +20,12 @@ function Bars({ daily }) {
 
 // The academy's first steps, until they are all done.
 function FirstSteps({ setup, base, gym }) {
-  const steps = [
+  const steps = isPersonal(gym) ? [
+    ['logo', 'Colocar sua logo e cores', 'configuracoes'],
+    ['plans', 'Cadastrar seus planos de consultoria (mensal, trimestral...)', 'financeiro'],
+    ['students', 'Cadastrar seus alunos (cada um recebe um convite por e-mail)', 'alunos'],
+    ['workouts', 'Montar as primeiras fichas de treino', 'treinos']
+  ] : [
     ['logo', 'Colocar a logo e as cores da academia', 'configuracoes'],
     ['plans', 'Cadastrar os planos (mensal, trimestral...)', 'financeiro'],
     ['staff', 'Cadastrar os instrutores', 'equipe'],
@@ -29,7 +35,7 @@ function FirstSteps({ setup, base, gym }) {
     ['products', 'Cadastrar os produtos da lojinha (água, suplementos...)', 'pdv']
   ]
   if (steps.every(([k]) => setup[k])) return null
-  return <Card title={`Primeiros passos na ${gym.name}`}>
+  return <Card title={isPersonal(gym) ? 'Primeiros passos' : `Primeiros passos na ${gym.name}`}>
     <ul className="sa-checklist">
       {steps.map(([k, label, to], i) => <li key={k} className={setup[k] ? 'done' : ''}>
         <span className="dot">{setup[k] ? '✓' : i + 1}</span><span>{label}</span>
@@ -49,14 +55,14 @@ export default function Dashboard() {
   return <>
     <PageHead title="Painel" subtitle={`Resumo de ${monthLabel(x.month)}`}>
       <Btn kind="primary" onClick={() => nav(`${base}/alunos`)}>Novo aluno</Btn>
-      <Btn onClick={() => nav(`${base}/pdv`)}>Abrir PDV</Btn>
+      {!isPersonal(gym) && <Btn onClick={() => nav(`${base}/pdv`)}>Abrir PDV</Btn>}
     </PageHead>
     <div className="sa-stats">
       <Stat label="Alunos ativos" value={x.students} />
-      <Stat label="Equipe" value={x.staff} />
+      {!isPersonal(gym) && <Stat label="Equipe" value={x.staff} />}
       <Stat label="Fichas de treino" value={x.workouts} hint={`${x.activeAssignments} atribuídas`} />
       <Stat label="Alunos sem ficha" value={x.studentsWithoutWorkout} tone={x.studentsWithoutWorkout ? 'warn' : ''} />
-      <Stat label="Entraram hoje" value={x.presentToday} hint="pela catraca ou recepção" />
+      {!isPersonal(gym) && <Stat label="Entraram hoje" value={x.presentToday} hint="pela catraca ou recepção" />}
       {x.myStudents !== undefined && <Stat label="Meus alunos" value={x.myStudents} />}
     </div>
     {isAdmin && x.setup && <FirstSteps setup={x.setup} base={base} gym={x.gym} />}
@@ -66,24 +72,24 @@ export default function Dashboard() {
         <Stat label="Saídas do mês" value={money(x.finance.expenseCents)} tone="bad" />
         <Stat label="Resultado" value={money(x.finance.balanceCents)} tone={x.finance.balanceCents >= 0 ? 'good' : 'bad'} />
         <Stat label="Mensalidades atrasadas" value={x.charges.overdueCount} hint={money(x.charges.overdueCents)} tone={x.charges.overdueCount ? 'bad' : ''} />
-        <Stat label="Vendas hoje (PDV)" value={money(x.sales.todayCents)} hint={`${x.sales.todayCount} vendas · mês ${money(x.sales.monthCents)}`} />
+        {!isPersonal(gym) && <Stat label="Vendas hoje (PDV)" value={money(x.sales.todayCents)} hint={`${x.sales.todayCount} vendas · mês ${money(x.sales.monthCents)}`} />}
       </div>
       <div className="sa-grid-2">
         <Card title="Entradas e saídas por dia" actions={<Btn onClick={() => nav(`${base}/financeiro`)}>Financeiro</Btn>}>
           <Bars daily={x.finance.daily} />
           <div className="sa-legend"><span className="in">Entradas</span><span className="out">Saídas</span></div>
         </Card>
-        <Card title="Estoque baixo" actions={<Btn onClick={() => nav(`${base}/insumos`)}>Insumos</Btn>}>
+        {!isPersonal(gym) && <Card title="Estoque baixo" actions={<Btn onClick={() => nav(`${base}/insumos`)}>Insumos</Btn>}>
           <Table rowKey={r => r.kind + r.id} columns={[
             { key: 'name', label: 'Item' },
             { key: 'kind', label: 'Tipo', render: r => (r.kind === 'p' ? 'Produto da loja' : 'Insumo') },
             { key: 'stock', label: 'Estoque', align: 'right', render: r => `${qty(r.stock_qty)} / mín. ${qty(r.min_qty)}` }
           ]} rows={[...x.lowStock.products.map(p => ({ ...p, kind: 'p' })), ...x.lowStock.supplies.map(s => ({ ...s, kind: 's' }))]} empty="Nenhum item abaixo do mínimo." />
-        </Card>
+        </Card>}
       </div>
-      <Card title="Caixa">
+      {!isPersonal(gym) && <Card title="Caixa">
         {x.cash ? <p>Caixa aberto desde {dateTimeBR(x.cash.opened_at)} com troco de <Money cents={x.cash.opening_cents} />.</p> : <p className="sa-muted">Nenhum caixa aberto agora.</p>}
-      </Card>
+      </Card>}
     </>}
   </>
 }

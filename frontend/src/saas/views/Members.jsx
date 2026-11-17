@@ -6,6 +6,8 @@ import { useGym } from '../SaasApp.jsx'
 import { useLoad, PageHead, Card, Table, Btn, Pill, Input, Select, Modal, Loading, LoadError, act } from '../ui.jsx'
 import { ROLE_LABEL } from '../lib/format.js'
 import MemberForm, { blankMember, useMemberForm } from './MemberForm.jsx'
+import { isPersonal } from '../product.js'
+import { notify } from '../ui.jsx'
 
 export function InviteNotice({ member, onClose }) {
   const text = `Seu código de acesso à academia: ${member.invite_code}. Crie sua conta no app e toque em Gestão > "Recebi um código de convite".`
@@ -30,11 +32,19 @@ export default function Members({ kind }) {
   const trainers = useLoad(() => sa.get(`/gyms/${gym.id}/members?role=staff`), [gym.id])
   const plans = useLoad(() => (isAdmin ? sa.get(`/gyms/${gym.id}/plans`) : Promise.resolve({ plans: [] })), [gym.id, isAdmin])
   const [f, set, setF] = useMemberForm(blankMember(kind === 'staff' ? 'trainer' : 'student'))
+  const personal = isPersonal(gym)
+  const [emailInvite, setEmailInvite] = useState(true)
 
   const save = async () => {
-    const body = { ...f, trainerMemberId: f.trainerMemberId || null, dueDay: f.dueDay ? Number(f.dueDay) : undefined, planId: f.planId || undefined }
+    const body = { ...f, trainerMemberId: f.trainerMemberId || null, dueDay: f.dueDay ? Number(f.dueDay) : undefined, planId: f.planId || undefined,
+      sendInvite: emailInvite && !!f.email.trim(), redirectTo: location.origin + location.pathname }
     const r = await act(() => sa.post(`/gyms/${gym.id}/members`, body), kind === 'staff' ? 'Profissional cadastrado' : 'Aluno cadastrado')
-    if (r) { setAdding(false); setF(blankMember(f.role)); setInvite(r.member); list.reload() }
+    if (r) {
+      setAdding(false); setF(blankMember(f.role)); list.reload()
+      if (r.invite?.sent) notify(`Convite enviado para ${r.member.email}. A pessoa define a senha pelo e-mail e já entra.`)
+      else if (r.invite?.existing) notify('Essa pessoa já tem conta: ela entra com o mesmo e-mail e já aparece ligada.')
+      else { if (r.invite?.error) notify(r.invite.error, 'err'); setInvite(r.member) }
+    }
   }
   const staff = kind === 'staff'
   const columns = [
@@ -66,7 +76,9 @@ export default function Members({ kind }) {
       <Btn onClick={() => setAdding(false)}>Cancelar</Btn>
       <Btn kind="primary" disabled={!f.name.trim()} onClick={save}>Salvar</Btn>
     </>}>
-      <MemberForm f={f} set={set} canRole={staff && isAdmin} trainers={trainers.data?.members || []} plans={isAdmin ? plans.data?.plans : null} />
+      <MemberForm f={f} set={set} canRole={staff && isAdmin && !personal} trainers={personal ? [] : trainers.data?.members || []} plans={isAdmin ? plans.data?.plans : null} />
+      <label className="sa-check"><input type="checkbox" checked={emailInvite} onChange={e => setEmailInvite(e.target.checked)} /> Enviar convite por e-mail (a pessoa define a senha e já entra ligada {personal ? 'a você' : 'à academia'})</label>
+      {emailInvite && !f.email.trim() && <p className="sa-muted small">Preencha o e-mail para enviar o convite. Sem e-mail, você recebe um código para entregar.</p>}
     </Modal>}
     {invite && <InviteNotice member={invite} onClose={() => setInvite(null)} />}
   </>

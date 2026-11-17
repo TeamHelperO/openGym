@@ -71,4 +71,4 @@ export function inviteCode(rand) {
 
 /** The columns of a gym row the routes read (the logo bytes stay behind). */
 export const GYM_COLS = ['id', 'name', 'slug', 'legal_name', 'document', 'email', 'phone', 'address', 'primary_color',
-  'custom_domain', 'logo_type', 'logo_version', 'status', 'settings', 'created_by', 'created_at'];
+  'custom_domain', 'kind', 'logo_type', 'logo_version', 'status', 'settings', 'created_by', 'created_at'];

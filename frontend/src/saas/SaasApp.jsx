@@ -18,6 +18,7 @@ import GymSettings from './views/GymSettings.jsx'
 import StudentHome from './views/StudentHome.jsx'
 import Platform from './views/Platform.jsx'
 import Access from './views/Access.jsx'
+import { isPersonal, wordsFor } from './product.js'
 import './saas.css'
 
 const GymCtx = createContext(null)
@@ -30,16 +31,18 @@ export function SourceFooter({ config }) {
   </footer>
 }
 
+// [path, label, roles, icon, where]: where is 'both', 'academy' or 'personal'.
 const NAV = [
   ['', 'Painel', ['gym_admin', 'trainer'], '◧'],
-  ['', 'Minha academia', ['student'], '◧'],
+  ['', 'Minha academia', ['student'], '◧', 'academy'],
+  ['', 'Meu acompanhamento', ['student'], '◧', 'personal'],
   ['alunos', 'Alunos', ['gym_admin', 'trainer'], '☺'],
-  ['equipe', 'Equipe', ['gym_admin'], '✦'],
+  ['equipe', 'Equipe', ['gym_admin'], '✦', 'academy'],
   ['treinos', 'Fichas de treino', ['gym_admin', 'trainer'], '≡'],
-  ['acesso', 'Catracas e acesso', ['gym_admin', 'trainer'], '⇥'],
-  ['pdv', 'PDV / Loja', ['gym_admin', 'trainer'], '⌂'],
+  ['acesso', 'Catracas e acesso', ['gym_admin', 'trainer'], '⇥', 'academy'],
+  ['pdv', 'PDV / Loja', ['gym_admin', 'trainer'], '⌂', 'academy'],
   ['financeiro', 'Financeiro', ['gym_admin'], '$'],
-  ['insumos', 'Insumos e compras', ['gym_admin'], '▣'],
+  ['insumos', 'Insumos e compras', ['gym_admin'], '▣', 'academy'],
   ['configuracoes', 'Configurações', ['gym_admin'], '⚙']
 ]
 
@@ -52,7 +55,8 @@ function GymLayout({ me }) {
   if (g.loading && !g.data) return <div className="sa-shell"><Loading /></div>
   if (g.error) return <div className="sa-shell"><div className="sa-main"><LoadError error={g.error} /><button className="sa-btn" onClick={() => nav('/gestao')}>Voltar</button></div></div>
   const { gym, role, memberId } = g.data
-  const links = NAV.filter(n => n[2].includes(role))
+  const personal = isPersonal(gym)
+  const links = NAV.filter(n => n[2].includes(role) && (!n[4] || n[4] === (personal ? 'personal' : 'academy')))
   const ctx = { gym, role, memberId, me, base: `/gestao/a/${gym.id}`, reloadGym: g.reload, isAdmin: role === 'gym_admin' }
   const style = { '--sa-brand': gym.primary_color || '#2563eb' }
   return <GymCtx.Provider value={ctx}>
@@ -60,7 +64,7 @@ function GymLayout({ me }) {
       <aside className="sa-side">
         <div className="sa-brand">
           {gym.logoUrl ? <img src={gym.logoUrl} alt="" /> : <div className="sa-brand-mark">{gym.name.slice(0, 1).toUpperCase()}</div>}
-          <div><strong>{gym.name}</strong><small>{ROLE_LABEL[role]}</small></div>
+          <div><strong>{gym.name}</strong><small>{role === 'gym_admin' ? wordsFor(gym).admin : ROLE_LABEL[role]}</small></div>
         </div>
         <nav>
           {links.map(([to, label, , icon]) => <NavLink key={label} end={to === ''} to={to ? `${ctx.base}/${to}` : ctx.base} onClick={() => setOpen(false)}>
@@ -68,7 +72,7 @@ function GymLayout({ me }) {
           </NavLink>)}
         </nav>
         <div className="sa-side-foot">
-          {(me.memberships.length > 1 || me.platformAdmin) && <NavLink to="/gestao" end>Trocar de academia</NavLink>}
+          {(me.memberships.length > 1 || me.platformAdmin) && <NavLink to="/gestao" end>Trocar de {wordsFor(gym).space}</NavLink>}
           {me.platformAdmin && <NavLink to="/gestao/plataforma">Administração da plataforma</NavLink>}
           <NavLink to="/home">App de treino</NavLink>
         </div>

@@ -16,7 +16,8 @@ const U = {
   owner: '00000000-0000-4000-8000-000000000002',
   coach: '00000000-0000-4000-8000-000000000003',
   student: '00000000-0000-4000-8000-000000000004',
-  other: '00000000-0000-4000-8000-000000000005'
+  other: '00000000-0000-4000-8000-000000000005',
+  invited: '00000000-0000-4000-8000-000000000006'
 }
 let db, fn, log = ''
 
@@ -25,7 +26,8 @@ before(async () => {
   await db.db.exec(`insert into opengym.profiles (id, name, email, admin, owner) values
     ('${U.root}', 'Plataforma', 'root@example.com', true, true), ('${U.owner}', 'Dona da Academia', 'dona@example.com', false, false),
     ('${U.coach}', 'Carlos Instrutor', 'carlos@example.com', false, false), ('${U.student}', 'Ana Aluna', 'ana@example.com', false, false),
-    ('${U.other}', 'Outro Dono', 'outro@example.com', false, false)`)
+    ('${U.other}', 'Outro Dono', 'outro@example.com', false, false),
+    ('${U.invited}', 'Bia Convidada', 'bia@example.com', false, false)`)
   fn = spawn(DENO, ['run', '--allow-net', '--allow-env', '--allow-read', '--node-modules-dir=none', path.join(here, '..', 'index.ts')], {
     env: { ...process.env, SUPABASE_DB_URL: `postgres://postgres:postgres@127.0.0.1:${DB_PORT}/postgres`, GESTAO_TEST_AUTH: '1', PG_MAX: '1', SUPABASE_URL: '' },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -253,4 +255,60 @@ test('turnstile: Control iD online mode, push queue, reception and the generic b
   assert.equal((await (await check(gen.body.token, { identifier: String(coachRow.access_id) })).json()).allow, true)
   assert.equal((await as('coach')('POST', `/gyms/${gid}/access/devices`, { name: 'x', kind: 'generic' })).status, 403)
   assert.doesNotMatch(log, /server error|Error:/, log)
+})
+
+test('personal trainer: e-mail invite, assessments, meal plan and the food diary', async () => {
+  const pt = as('coach')
+  const g = await pt('POST', '/gyms', { kind: 'personal' })
+  assert.equal(g.status, 201, JSON.stringify(g.body))
+  assert.equal(g.body.kind, 'personal')
+  assert.equal(g.body.name, 'Consultoria Carlos Instrutor')
+  const gid = g.body.id
+  const st = await pt('POST', `/gyms/${gid}/members`, { name: 'Bia', role: 'student', email: 'BIA@example.com', sendInvite: true, redirectTo: 'https://steelday.vercel.app/' })
+  assert.equal(st.status, 201, JSON.stringify(st.body))
+  assert.deepEqual(st.body.invite, { sent: true, test: true })
+  assert.equal(st.body.member.joined_via, 'email')
+  assert.equal((await pt('POST', `/gyms/${gid}/members`, { name: 'Sem email', role: 'student', sendInvite: true })).body.invite.sent, false)
+  // Bia signs in with the invited address: the row becomes hers.
+  const me = await as('invited')('GET', '/me')
+  const mine = me.body.memberships.find(m => m.gym.id === gid)
+  assert.equal(mine.role, 'student')
+  assert.equal(mine.gym.kind, 'personal')
+  const sid = st.body.member.id
+
+  const a1 = await pt('POST', `/gyms/${gid}/members/${sid}/assessments`, { date: '2026-10-01', weightKg: 70.5, heightCm: 165, perimeters: { waist: 80, hip: 100, arm_r: 30, bogus: 5 }, bio: { fat_pct: 28, lean_kg: 50.2 } })
+  assert.equal(a1.status, 201, JSON.stringify(a1.body))
+  assert.deepEqual(a1.body.assessment.perimeters, { waist: 80, hip: 100, arm_r: 30 })
+  assert.equal((await pt('POST', `/gyms/${gid}/members/${sid}/assessments`, { perimeters: { waist: 9999 } })).status, 400)
+  assert.equal((await pt('POST', `/gyms/${gid}/members/${sid}/assessments`, {})).status, 400)
+  await pt('POST', `/gyms/${gid}/members/${sid}/assessments`, { date: '2026-11-01', weightKg: 68, perimeters: { waist: 76 } })
+  assert.equal((await pt('GET', `/gyms/${gid}/members/${sid}/assessments`)).body.assessments.length, 2)
+  assert.equal((await as('invited')('GET', `/gyms/${gid}/my/assessments`)).body.assessments[0].weight_kg, 68)
+
+  const plan = await pt('POST', `/gyms/${gid}/members/${sid}/meal-plans`, {
+    name: 'Cutting', targets: { kcal: 1800, protein: 130 },
+    meals: [{ key: 'cafe', name: 'Café da manhã', time: '07:30', items: [{ name: 'Ovo, de galinha, inteiro, cozido', tacoId: 488, grams: 100, kcal: 146, protein: 13.3, carbs: 0.6, fat: 9.5 }] },
+      { name: 'Almoço', time: '12:00', items: [{ name: 'Arroz, tipo 1, cozido', grams: 150, kcal: 192, protein: 3.8, carbs: 42, fat: 0.3 }] }]
+  })
+  assert.equal(plan.status, 201, JSON.stringify(plan.body))
+  assert.deepEqual(plan.body.plan.meals.map(m => m.key), ['cafe', 'm2'])
+  const pid = plan.body.plan.id
+  const my = await as('invited')('GET', `/gyms/${gid}/my/meal-plan`)
+  assert.equal(my.body.plan.id, pid)
+  const jpg = 'data:image/jpeg;base64,' + btoa(String.fromCharCode(0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4))
+  const log = await as('invited')('PUT', `/gyms/${gid}/my/meal-plan/${pid}/log`, { mealKey: 'cafe', done: true, note: 'comi 2 ovos', photoDataUrl: jpg })
+  assert.equal(log.status, 200, JSON.stringify(log.body))
+  assert.equal(log.body.log.has_photo, true)
+  assert.equal((await as('invited')('PUT', `/gyms/${gid}/my/meal-plan/${pid}/log`, { mealKey: 'nope' })).status, 400)
+  const seen = await pt('GET', `/gyms/${gid}/members/${sid}/food-logs`)
+  assert.equal(seen.body.logs.length, 1)
+  assert.equal(seen.body.adherence.days.at(-1).done, 1)
+  const photo = await pt('GET', `/gyms/${gid}/food-logs/${seen.body.logs[0].id}/photo`)
+  assert.equal(photo.headers.get('content-type'), 'image/jpeg')
+  // Someone else's student cannot read it.
+  assert.equal((await as('student')('GET', `/gyms/${gid}/food-logs/${seen.body.logs[0].id}/photo`)).status, 403)
+  // A new plan retires the old one.
+  await pt('POST', `/gyms/${gid}/members/${sid}/meal-plans`, { name: 'Manutenção', meals: [{ name: 'Livre', items: [] }] })
+  const plans = await pt('GET', `/gyms/${gid}/members/${sid}/meal-plans`)
+  assert.deepEqual(plans.body.plans.map(p => p.status).sort(), ['active', 'archived'])
 })

@@ -169,3 +169,10 @@ by the Capawesome Team (Robin Genz), a Capacitor wrapper around Google's ML Kit,
 **Apache License 2.0**. openGym pins the `7.x` line to stay on Capacitor 7. The full license text is
 available at <https://www.apache.org/licenses/LICENSE-2.0> and in the package's own `LICENSE` file.
 The decoded string is what openGym keeps; the photo itself is never stored.
+
+## Tabela de composição de alimentos (TACO)
+
+Os valores nutricionais do plano alimentar (`frontend/src/saas/lib/taco.js`) vêm da Tabela Brasileira
+de Composição de Alimentos (TACO), 4ª edição revisada e ampliada, NEPA/UNICAMP, Campinas, 2011,
+na forma organizada por [isaquetdiniz/taco-api](https://github.com/isaquetdiniz/taco-api) (licença MIT,
+Copyright (c) 2022 Isaque Diniz).

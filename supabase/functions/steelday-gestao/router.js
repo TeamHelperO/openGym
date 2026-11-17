@@ -14,6 +14,7 @@ import { registerSupplies } from './supplies.js';
 import { registerPos } from './pos.js';
 import { registerPlatform } from './platform.js';
 import { registerAccess } from './access.js';
+import { registerFollowup } from './followup.js';
 
 export function createSaas(deps) {
   const { sql, session } = deps;
@@ -30,7 +31,7 @@ export function createSaas(deps) {
   };
   const rand = n => crypto.getRandomValues(new Uint8Array(n));
   const shared = { ...deps, audit, rand };
-  for (const reg of [registerGyms, registerMembers, registerTraining, registerFinance, registerSupplies, registerPos, registerPlatform, registerAccess]) reg(route, shared);
+  for (const reg of [registerGyms, registerMembers, registerTraining, registerFinance, registerSupplies, registerPos, registerPlatform, registerAccess, registerFollowup]) reg(route, shared);
 
   async function run(entry, params, req, url) {
     const ctx = { req, url, params, query: url.searchParams, user: null, gym: null, member: null, role: null, platformAdmin: false };

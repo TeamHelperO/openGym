@@ -25,7 +25,14 @@ export function memberView(m, { withCode = false } = {}) {
   };
 }
 
-export function registerMembers(route, { sql, audit, rand }) {
+export function registerMembers(route, { sql, audit, rand, inviteByEmail }) {
+  // Sends the platform's invitation e-mail; the student sets a password and lands in the app.
+  const sendInvite = async (m, redirectTo) => {
+    if (!m.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m.email)) throw bad('informe um e-mail válido para enviar o convite');
+    const r = await inviteByEmail(m.email, { name: m.name, redirectTo: typeof redirectTo === 'string' && /^https:\/\//.test(redirectTo) ? redirectTo : undefined });
+    await sql`update opengym.gym_members set joined_via = 'email', updated_at = now() where id = ${m.id} and user_id is null`;
+    return r;
+  };
   const newCode = async q => {
     for (;;) {
       const c = inviteCode(rand);
@@ -99,7 +106,12 @@ export function registerMembers(route, { sql, audit, rand }) {
       return m.id;
     });
     await audit(ctx, 'member.create', { memberId: mid, role });
-    return { __status: 201, body: { member: memberView(await getMember(ctx.gym.id, mid), { withCode: true }) } };
+    let invite = null;
+    if (b.sendInvite) {
+      try { invite = await sendInvite(await getMember(ctx.gym.id, mid), b.redirectTo); }
+      catch (e) { invite = { sent: false, error: e.message }; }
+    }
+    return { __status: 201, body: { member: memberView(await getMember(ctx.gym.id, mid), { withCode: true }), invite } };
   });
 
   route('GET', '/gyms/:gymId/members/:memberId', STAFF, async ctx => {
@@ -158,6 +170,16 @@ export function registerMembers(route, { sql, audit, rand }) {
     });
     await audit(ctx, 'member.status', { memberId: m.id, status });
     return { member: memberView(await getMember(ctx.gym.id, m.id), { withCode: true }) };
+  });
+
+  route('POST', '/gyms/:gymId/members/:memberId/invite-email', STAFF, async ctx => {
+    const m = await getMember(ctx.gym.id, ctx.params.memberId);
+    if (!mayEdit(ctx, m)) throw forbidden();
+    if (m.user_id) throw bad('esta pessoa já tem acesso');
+    const b = await ctx.body();
+    const r = await sendInvite(m, b.redirectTo);
+    await audit(ctx, 'member.invite-email', { memberId: m.id });
+    return { invite: r, member: memberView(await getMember(ctx.gym.id, m.id), { withCode: true }) };
   });
 
   route('POST', '/gyms/:gymId/members/:memberId/invite', STAFF, async ctx => {

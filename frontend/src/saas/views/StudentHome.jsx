@@ -8,6 +8,9 @@ import { useLoad, PageHead, Card, Btn, Pill, Table, Money, Loading, LoadError, a
 import { dateBR, CHARGE_STATUS, today } from '../lib/format.js'
 import { parsePlan, mergePlan } from '../../lib/plan-share.js'
 import { useStore } from '../../store/useStore.js'
+import AssessmentsPanel from './Assessments.jsx'
+import { StudentDiet } from './Nutrition.jsx'
+import { isPersonal } from '../product.js'
 import { EXIDX } from '../../lib/exercises.js'
 import { exerciseNameText } from '../../lib/format.js'
 
@@ -40,13 +43,14 @@ export default function StudentHome() {
     <PageHead title={`Olá, ${member?.name?.split(' ')[0] || ''}`} subtitle={gym.settings?.welcomeMessage || `Bem-vindo à ${gym.name}.`}>
       <Btn kind="primary" onClick={() => nav('/home')}>Ir treinar</Btn>
     </PageHead>
+    <StudentDiet gym={gym} />
     <div className="sa-grid-2">
-      <Card title="Seu instrutor">
-        {trainer ? <><p><strong>{trainer.name}</strong></p>{trainer.phone && <a className="sa-btn" href={`https://wa.me/${trainer.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">Falar no WhatsApp</a>}</> : <p className="sa-muted">A academia ainda não definiu seu instrutor.</p>}
+      <Card title={isPersonal(gym) ? 'Seu personal' : 'Seu instrutor'}>
+        {trainer ? <><p><strong>{trainer.name}</strong></p>{trainer.phone && <a className="sa-btn" href={`https://wa.me/${trainer.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">Falar no WhatsApp</a>}</> : isPersonal(gym) ? <p><strong>{gym.name}</strong></p> : <p className="sa-muted">A academia ainda não definiu seu instrutor.</p>}
         {member?.goal && <p>Objetivo: {member.goal}</p>}
         {member?.health_notes && <p className="sa-muted pre">Saúde: {member.health_notes}</p>}
       </Card>
-      <Card title="Seu plano">
+      <Card title="Sua assinatura">
         {subscriptions?.length ? subscriptions.map(s => <p key={s.id}><strong>{s.plan_name}</strong> · <Money cents={s.price_cents} /> · vence todo dia {s.due_day}</p>) : <p className="sa-muted">Nenhum plano ativo.</p>}
       </Card>
     </div>
@@ -69,6 +73,7 @@ export default function StudentHome() {
       </div>)}
       <p className="sa-muted small">Ao adicionar, os treinos entram como rotinas novas no app (nada do que você já tem é apagado). Se a ficha tiver dias da semana, sua agenda passa a seguir a ficha.</p>
     </Card>
+    <AssessmentsPanel gym={gym} readOnly />
     <Card title="Mensalidades">
       <Table columns={[
         { key: 'description', label: 'Descrição' },

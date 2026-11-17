@@ -25,7 +25,7 @@ export default function MemberForm({ f, set, trainers = [], canRole, plans }) {
     <Field label="CPF"><Input value={f.document} onChange={set('document')} /></Field>
     <Field label="Data de nascimento"><Input type="date" value={f.birthDate} onChange={set('birthDate')} /></Field>
     {student && <>
-      <Field label="Instrutor responsável"><Select value={f.trainerMemberId} onChange={set('trainerMemberId')} placeholder="Sem instrutor" options={trainers.map(t => ({ value: t.id, label: t.name }))} /></Field>
+      {trainers.length > 0 && <Field label="Instrutor responsável"><Select value={f.trainerMemberId} onChange={set('trainerMemberId')} placeholder="Sem instrutor" options={trainers.map(t => ({ value: t.id, label: t.name }))} /></Field>}
       <Field label="Objetivo" wide><Input value={f.goal} onChange={set('goal')} placeholder="Ex.: hipertrofia, emagrecimento, condicionamento" /></Field>
       <Field label="Saúde e restrições" wide hint="Lesões, medicamentos, liberação médica. Visível para a equipe e para o próprio aluno."><Area value={f.healthNotes} onChange={set('healthNotes')} /></Field>
     </>}

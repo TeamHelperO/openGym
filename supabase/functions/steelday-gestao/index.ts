@@ -44,7 +44,26 @@ async function session(req: Request) {
   return p && !p.disabled ? p : null
 }
 
-const saas = createSaas({ sql, session })
+// The invitation e-mail a trainer sends a student (Supabase Auth: the student sets a password
+// through the link). Someone who already has an account is linked at their next sign-in instead.
+async function inviteByEmail(email: string, { name, redirectTo }: { name?: string; redirectTo?: string }) {
+  if (TEST_AUTH) return { sent: true, test: true }
+  if (!sb) throw new SaasError(503, 'envio de e-mail indisponível')
+  const { error } = await sb.auth.admin.inviteUserByEmail(email, { data: { name }, ...(redirectTo ? { redirectTo } : {}) })
+  if (!error) return { sent: true }
+  if ((error as any).status === 422 || /already/i.test(error.message)) return { sent: false, existing: true }
+  console.error('invite e-mail', error)
+  throw new SaasError(502, 'não foi possível enviar o convite agora. Tente de novo em alguns minutos.')
+}
+// Whether Supabase has confirmed this profile's e-mail (an invite link or a sign-up confirmation).
+async function emailConfirmed(uid: string) {
+  if (TEST_AUTH) return true
+  if (!sb) return false
+  const { data } = await sb.auth.admin.getUserById(uid)
+  return !!data?.user?.email_confirmed_at
+}
+
+const saas = createSaas({ sql, session, inviteByEmail, emailConfirmed })
 const devices = createDeviceGateway({ sql })
 
 let corsOrigin = '*'

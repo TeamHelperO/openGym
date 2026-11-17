@@ -8,7 +8,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const migration = path.join(here, '../../../migrations/20261117190000_gestao.sql')
+const migrations = ['20261117190000_gestao.sql', '20261117200000_gestao_personal.sql'].map(f => path.join(here, '../../../migrations', f))
 
 export async function startDb(port) {
   const db = new PGlite()
@@ -19,7 +19,7 @@ export async function startDb(port) {
       owner boolean not null default false, disabled boolean not null default false, created_at timestamptz not null default now());
     create table opengym.state (user_id uuid primary key references opengym.profiles(id) on delete cascade, doc jsonb not null default '{}'::jsonb,
       rev integer not null default 0, updated_at timestamptz not null default now());`)
-  await db.exec(fs.readFileSync(migration, 'utf8'))
+  for (const m of migrations) await db.exec(fs.readFileSync(m, 'utf8'))
   const server = new PGLiteSocketServer({ db, port, host: '127.0.0.1', maxConnections: 1 })
   await server.start()
   return { db, stop: async () => { await server.stop(); await db.close() } }

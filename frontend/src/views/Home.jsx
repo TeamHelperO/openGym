@@ -6,6 +6,7 @@ import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAY
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
+import { PRODUCT } from '../saas/product.js'
 import Icon from '../components/Icon.jsx'
 import QueueRow from '../components/QueueRow.jsx'
 import MiniBodyMap from '../components/MiniBodyMap.jsx'
@@ -21,6 +22,9 @@ import WeightRate from '../components/WeightRate.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
+// The way into the follow-up area (src/saas): the trainer's panel, or the student's follow-up.
+const ENTRY = PRODUCT === 'personal' ? 'Acompanhamento' : 'Gestão da academia'
+
 export default function Home() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -109,7 +113,7 @@ export default function Home() {
       <SeasonDeco spot="header-bats" />
       <div><h1>{user ? t('Hi {0}', user.name) : 'SteelDay'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       {/* The academy management area (src/saas/). */}
-      {user && <button className="iconbtn" style={{ marginLeft: 'auto', marginRight: 8 }} onClick={() => nav('/gestao')} aria-label="Gestão da academia" title="Gestão da academia"><Icon name="house" /></button>}
+      {user && <button className="iconbtn" style={{ marginLeft: 'auto', marginRight: 8 }} onClick={() => nav('/gestao')} aria-label={ENTRY} title={ENTRY}><Icon name="house" /></button>}
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
 

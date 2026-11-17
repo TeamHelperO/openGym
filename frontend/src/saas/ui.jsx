@@ -122,3 +122,30 @@ export function Confirm({ title, text, confirm = 'Confirmar', danger, onYes, onC
     <Btn kind={danger ? 'danger' : 'primary'} disabled={busy} onClick={async () => { setBusy(true); await onYes(); setBusy(false); onClose() }}>{confirm}</Btn>
   </>}><p>{text}</p></Modal>
 }
+
+/** A small line chart of [{ date, value }], drawn to scale, with first and last values labelled. */
+export function TrendChart({ points, unit = '', height = 140, label }) {
+  if (!points || points.length < 2) return <p className="sa-muted small">{label ? `${label}: ` : ''}precisa de pelo menos duas medições para o gráfico.</p>
+  const W = 600, H = height, P = { l: 44, r: 16, t: 14, b: 26 }
+  const vs = points.map(p => p.value)
+  let lo = Math.min(...vs), hi = Math.max(...vs)
+  if (lo === hi) { lo -= 1; hi += 1 }
+  const pad = (hi - lo) * 0.12; lo -= pad; hi += pad
+  const t0 = Date.parse(points[0].date), t1 = Date.parse(points.at(-1).date)
+  const x = d => P.l + ((Date.parse(d) - t0) / Math.max(1, t1 - t0)) * (W - P.l - P.r)
+  const y = v => P.t + (1 - (v - lo) / (hi - lo)) * (H - P.t - P.b)
+  const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')
+  const fmt = v => (Math.round(v * 10) / 10).toLocaleString('pt-BR')
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad]
+  const day = d => d.slice(8, 10) + '/' + d.slice(5, 7)
+  return <figure className="sa-chart">
+    {label && <figcaption>{label}</figcaption>}
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label || ''} de ${fmt(points[0].value)} para ${fmt(points.at(-1).value)} ${unit}`}>
+      {ticks.map((v, i) => <g key={i}><line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} className="grid" /><text x={P.l - 6} y={y(v) + 4} textAnchor="end">{fmt(v)}</text></g>)}
+      <path d={path} className="line" />
+      {points.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.value)} r={i === points.length - 1 ? 4.5 : 3} className={i === points.length - 1 ? 'end' : 'dot'} />)}
+      <text x={x(points[0].date)} y={H - 6} textAnchor="start">{day(points[0].date)}</text>
+      <text x={x(points.at(-1).date)} y={H - 6} textAnchor="end">{day(points.at(-1).date)}</text>
+    </svg>
+  </figure>
+}

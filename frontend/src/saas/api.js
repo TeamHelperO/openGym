@@ -30,7 +30,16 @@ async function call(method, p, body) {
   return absolute(data)
 }
 
+// A private file (a meal photo) as an object URL: an <img> cannot send the access token itself.
+async function blobUrl(p) {
+  const token = GESTAO_BASE ? await freshToken() : null
+  const r = await fetch((GESTAO_BASE || '') + '/api/saas' + p, { headers: token ? { Authorization: 'Bearer ' + token } : {}, credentials: 'same-origin' })
+  if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { status: r.status })
+  return URL.createObjectURL(await r.blob())
+}
+
 export const sa = {
+  blobUrl,
   get: p => call('GET', p),
   post: (p, b = {}) => call('POST', p, b),
   put: (p, b = {}) => call('PUT', p, b),

@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { sa } from './api.js'
 import { useUI } from '../store/useUI.js'
 import { pendingJoin, clearJoin, detectJoin, slugFromHash } from './join.js'
+import { PRODUCT } from './product.js'
 
 const LANDED = 'saas_landed'
 
@@ -35,7 +36,9 @@ export default function SaasBoot({ user }) {
         }
         try { sessionStorage.setItem(LANDED, user.id) } catch { /* private mode */ }
         const me = await sa.get('/me')
-        const runsSomething = me.platformAdmin || me.memberships.some(m => m.role !== 'student')
+        // On SteelDay someone with no workspace at all signed up to be a trainer: students come in
+        // through an invite and are already linked by now.
+        const runsSomething = me.platformAdmin || me.memberships.some(m => m.role !== 'student') || (PRODUCT === 'personal' && !me.memberships.length)
         if (runsSomething) nav('/gestao', { replace: true })
         else if (viaLink) nav('/home', { replace: true })
       } catch { if (viaLink) nav('/home', { replace: true }) }

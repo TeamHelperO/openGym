@@ -40,6 +40,7 @@ import { forgetCoach } from '../lib/coach-api.js'
 import { coachAvailable } from '../lib/coach.js'
 import { REST_MAX, REST_PAUSE_MIN, REST_PAUSE_MAX, fmtRest, fmtDuration } from '../lib/duration.js'
 import { starterPlanSheet, confirmSheet, importFromApp, importFromHevy, equipmentProfileSheet, plateInventorySheet, dumbbellInventorySheet, barDefaultsSheet, menuSheet } from '../sheets.jsx'
+import { PRODUCT } from '../saas/product.js'
 import Icon from '../components/Icon.jsx'
 import { durationSheet } from '../components/DurationWheel.jsx'
 import { showsConnection, showsLocalLine } from '../components/SyncBanner.jsx'
@@ -1152,7 +1153,9 @@ function SettingsRoot({ ctx, preview, open, user, sync, home, go, entryKey }) {
       {/* The academy management area (src/saas/), for anyone signed in. Its text is pt-BR only
           for now, outside the i18n packs, like the rest of that area. */}
       {user && !DEMO && <Section>
-        <Row icon="house" iconTint="var(--indigo)" title="Gestão da academia" subtitle="Alunos, treinos, catracas, financeiro, PDV e insumos" accessory="chevron" onClick={() => nav('/gestao')} className="sp-root-row" />
+        {PRODUCT === 'personal'
+          ? <Row icon="house" iconTint="var(--indigo)" title="Acompanhamento" subtitle="Alunos, avaliações, dieta, treinos e cobranças" accessory="chevron" onClick={() => nav('/gestao')} className="sp-root-row" />
+          : <Row icon="house" iconTint="var(--indigo)" title="Gestão da academia" subtitle="Alunos, treinos, catracas, financeiro, PDV e insumos" accessory="chevron" onClick={() => nav('/gestao')} className="sp-root-row" />}
       </Section>}
       {ROOT_GROUPS.map(g => g.filter(id => pageVisible(id, ctx))).filter(g => g.length).map(g => (
         <Section key={g[0]}>
