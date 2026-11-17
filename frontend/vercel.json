@@ -32,5 +32,31 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/new_user_identified.fcgi",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/new_user_identified.fcgi"
+    },
+    {
+      "source": "/new_card.fcgi",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/new_card.fcgi"
+    },
+    {
+      "source": "/new_user_id_and_password.fcgi",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/new_user_id_and_password.fcgi"
+    },
+    {
+      "source": "/device_is_alive.fcgi",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/device_is_alive.fcgi"
+    },
+    {
+      "source": "/push",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/push"
+    },
+    {
+      "source": "/result",
+      "destination": "https://qyvbwlylalqtvfovczbb.supabase.co/functions/v1/steelday-gestao/result"
+    }
   ]
 }

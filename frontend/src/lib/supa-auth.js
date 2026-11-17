@@ -15,6 +15,8 @@ const KEY = import.meta.env.VITE_SUPABASE_KEY || ''
 
 export const SUPA = !!(URL_BASE && KEY)
 export const API_BASE = SUPA ? URL_BASE + '/functions/v1/opengym-api' : ''
+// The academy management API (supabase/functions/steelday-gestao), beside opengym-api.
+export const GESTAO_BASE = SUPA ? URL_BASE + '/functions/v1/steelday-gestao' : ''
 
 const LS = 'gym_supa_session'
 // Set when a sign-in starts away from the app (a magic link, a confirmation e-mail): the login

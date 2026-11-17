@@ -1149,6 +1149,11 @@ function SettingsRoot({ ctx, preview, open, user, sync, home, go, entryKey }) {
           <Icon name="chevronRight" className="lrow-c" />
         </button>
       </Section>
+      {/* The academy management area (src/saas/), for anyone signed in. Its text is pt-BR only
+          for now, outside the i18n packs, like the rest of that area. */}
+      {user && !DEMO && <Section>
+        <Row icon="house" iconTint="var(--indigo)" title="Gestão da academia" subtitle="Alunos, treinos, catracas, financeiro, PDV e insumos" accessory="chevron" onClick={() => nav('/gestao')} className="sp-root-row" />
+      </Section>}
       {ROOT_GROUPS.map(g => g.filter(id => pageVisible(id, ctx))).filter(g => g.length).map(g => (
         <Section key={g[0]}>
           {g.map(id => <Row key={id} icon={PAGES[id].icon} iconTint={PAGES[id].tint} title={t(PAGES[id].title)}

@@ -108,6 +108,8 @@ export default function Home() {
     <div className="hdr">
       <SeasonDeco spot="header-bats" />
       <div><h1>{user ? t('Hi {0}', user.name) : 'SteelDay'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+      {/* The academy management area (src/saas/). */}
+      {user && <button className="iconbtn" style={{ marginLeft: 'auto', marginRight: 8 }} onClick={() => nav('/gestao')} aria-label="Gestão da academia" title="Gestão da academia"><Icon name="house" /></button>}
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
 

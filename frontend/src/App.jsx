@@ -47,6 +47,9 @@ import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Workout from './views/Workout.jsx'
+// The academy platform's small always-loaded part: link/domain signup and the landing by role.
+import SaasBoot, { JoinRoute } from './saas/SaasBoot.jsx'
+import { detectJoin } from './saas/join.js'
 
 // Screens most sessions never open (the Coach, the admin dashboard, photos, measurements, the
 // balance check) are their own chunks rather than part of the code every start parses: ~200 KB
@@ -64,6 +67,8 @@ function lazyView(load) {
   }
 }
 const Admin = lazyView(() => import('./views/Admin.jsx'))
+// The academy management area (SaaS): its own wide layout, routes and pt-BR text (src/saas/).
+const SaasApp = lazyView(() => import('./saas/SaasApp.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -277,9 +282,12 @@ function Shell() {
   }, [inWorkout])
   // The chat owns the bottom of the screen as well: its composer sits where the tabs would be.
   // The first-launch card has no tabs either: they changed the route behind it.
-  const noTabs = inWorkout || loc.pathname === '/coach' || needsMobileOnboarding || permSteps
+  const inSaas = loc.pathname === '/gestao' || loc.pathname.startsWith('/gestao/')
+  const noTabs = inWorkout || inSaas || loc.pathname === '/coach' || needsMobileOnboarding || permSteps
 
   const authed = user || isGuest
+  // The academy behind a signup link or the domain the app was opened at, for the sign-in screen.
+  useEffect(() => { if (!user) detectJoin() }, [user])
   // The boot screen in index.html covers the start; it goes once there is something to show.
   useEffect(() => { if (ready || authed) hideBoot() }, [ready, authed])
   if (!ready && !authed) return (
@@ -316,6 +324,10 @@ function Shell() {
       <Route path="/coach/proposal" element={<Navigate to="/coach" replace />} />
       <Route path="/coach/setup" element={<CoachSetup />} />
       <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
+      {/* Academy management: needs a server account (a guest or a phone in local mode has none). */}
+      <Route path="/gestao/*" element={user ? <SaasApp /> : <Navigate to="/home" replace />} />
+      {/* An academy's signup link (#/a/<slug>): SaasBoot joins it once the person is signed in. */}
+      <Route path="/a/:slug" element={<JoinRoute />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   ))
@@ -329,13 +341,16 @@ function Shell() {
           lands it simply stays: same key, same parent, so React keeps it instead of mounting
           the route again. */}
       <div id="app">
-        <Page key={loc.pathname} loc={loc} render={view} motion={pageMotion(pathRef.current, loc.pathname, navType)} />
+        {/* The management area routes inside itself, so it is one page: a key per path would
+            mount it afresh (and fetch everything again) on every move between its screens. */}
+        <Page key={inSaas ? '/gestao' : loc.pathname} loc={loc} render={view} motion={inSaas ? null : pageMotion(pathRef.current, loc.pathname, navType)} />
         {showPreview && <Page key={preview} loc={previewLoc(preview)} render={view} under scrollY={scrollPositions.get(preview) || 0} />}
       </div>
       {/* Outside #app: the view's fade-in animates a transform, and a fixed element inside it
           would ride along with the page for the length of it. Decides for itself when to show —
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
+      {user && <SaasBoot user={user} />}
       {!noTabs && <TabBar onStart={startFlow} />}
       <RestTimer />
       <Modals />
