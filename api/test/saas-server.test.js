@@ -238,3 +238,107 @@ test('SAAS_MODE=off switches the whole area off', async t => {
   assert.equal((await h.as(null)('GET', '/config')).status, 404);
   assert.equal((await h.as('owner')('POST', '/gyms', { name: 'X' })).status, 404);
 });
+
+test('signup link, own domain and the role each person lands on', async t => {
+  const h = await startServer(t);
+  const owner = h.as('owner');
+  const g = await owner('POST', '/gyms', { name: 'Academia Link' });
+  const gid = g.body.id;
+  assert.equal(g.body.signupPath, '#/a/academia-link');
+  const brand = await h.as(null)('GET', '/public/gym?slug=academia-link');
+  assert.equal(brand.body.gym.name, 'Academia Link');
+  assert.equal(brand.body.gym.publicSignup, true);
+  assert.equal(brand.body.gym.document, undefined, 'a visitor sees the face of the academy, not its data');
+
+  const joined = await h.as('student')('POST', '/public/join/academia-link');
+  assert.equal(joined.status, 201);
+  assert.equal((await h.as('student')('POST', '/public/join/academia-link')).body.already, true);
+  const list = await owner('GET', `/gyms/${gid}/members?role=student`);
+  assert.equal(list.body.members.length, 1);
+  assert.equal(list.body.members[0].joined_via, 'link');
+  assert.equal(list.body.members[0].access_id, 1002, 'the owner is 1001, the first student 1002');
+
+  // The academy can close the link.
+  await owner('PUT', `/gyms/${gid}`, { settings: { publicSignup: false } });
+  assert.equal((await h.as('coach')('POST', '/public/join/academia-link')).status, 403);
+
+  // Its own domain: found by the Host the app is opened at, and answered for the certificate check.
+  assert.equal((await owner('PUT', `/gyms/${gid}`, { customDomain: 'https://App.AcademiaLink.com.br/' })).body.gym.custom_domain, 'app.academialink.com.br');
+  assert.equal((await owner('PUT', `/gyms/${gid}`, { customDomain: 'not a domain' })).status, 400);
+  const r = await fetch(`http://127.0.0.1:${h.port}/api/saas/public/gym`, { headers: { 'X-Forwarded-Host': 'app.academialink.com.br' } });
+  assert.equal((await r.json()).gym.slug, 'academia-link');
+  assert.equal((await h.as(null)('GET', '/public/domain-check?domain=app.academialink.com.br')).status, 200);
+  assert.equal((await h.as(null)('GET', '/public/domain-check?domain=evil.example.com')).status, 404);
+});
+
+test('turnstile: Control iD online mode, push queue, reception and the generic bridge', async t => {
+  const h = await startServer(t);
+  const { gid, studentId } = await gymWithPeople(h);
+  const owner = h.as('owner');
+  const dev = await owner('POST', `/gyms/${gid}/access/devices`, { name: 'Catraca entrada', kind: 'controlid', serial: '0M0100/001', releaseAction: 'catra_clockwise' });
+  assert.equal(dev.status, 201, JSON.stringify(dev.body));
+  const did = dev.body.device.id;
+  const base = `http://127.0.0.1:${h.port}`;
+  const device = async (path, params, method = 'POST') => {
+    const r = await fetch(base + path + (method === 'GET' ? '?' + new URLSearchParams(params) : ''), method === 'GET' ? {} : { method, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(params) });
+    const text = await r.text();
+    return { status: r.status, body: text ? JSON.parse(text) : null };
+  };
+  const stud = (await owner('GET', `/gyms/${gid}/members/${studentId}`)).body.member;
+
+  // A finger the device matched to the student: in, and the arm turns.
+  let a = await device('/new_user_identified.fcgi', { device_id: '0M0100/001', user_id: String(stud.access_id), portal_id: '1', event: '7' });
+  assert.equal(a.status, 200);
+  assert.equal(a.body.result.event, 7);
+  assert.deepEqual(a.body.result.actions, [{ action: 'catra', parameters: 'allow=clockwise' }]);
+  // An unknown device gets nothing opened.
+  a = await device('/new_user_identified.fcgi', { device_id: 'stranger', user_id: String(stud.access_id) });
+  assert.equal(a.body.result.event, 3);
+  // A finger nobody matched.
+  a = await device('/new_user_identified.fcgi', { device_id: '0M0100/001', user_id: '0' });
+  assert.equal(a.body.result.event, 3);
+
+  // A fee 30 days overdue blocks the student at the turnstile.
+  const old = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  await owner('POST', `/gyms/${gid}/charges`, { memberId: studentId, description: 'Mensal', amountCents: 9990, dueDate: old });
+  a = await device('/new_user_identified.fcgi', { device_id: '0M0100/001', user_id: String(stud.access_id) });
+  assert.equal(a.body.result.event, 6);
+  assert.equal(a.body.result.message, 'Mensalidade em atraso');
+  // Same answer at the reception.
+  assert.equal((await owner('POST', `/gyms/${gid}/access/checkin`, { memberId: studentId })).body.allow, false);
+
+  // Enrollment and release go out through the push queue, one command per poll.
+  assert.equal((await owner('POST', `/gyms/${gid}/members/${studentId}/enroll`, { deviceId: did })).status, 200);
+  await owner('POST', `/gyms/${gid}/access/devices/${did}/release`, { memberId: studentId, reason: 'Liberado pela recepção' });
+  let p = await device('/push', { deviceId: '0M0100/001', uuid: 'x' }, 'GET');
+  assert.equal(p.body.endpoint, 'create_objects');
+  assert.deepEqual(p.body.body.values[0], { id: stud.access_id, name: 'Ana', registration: '' });
+  await device('/result', { deviceId: '0M0100/001' });
+  p = await device('/push', { deviceId: '0M0100/001' }, 'GET');
+  assert.deepEqual(p.body.body, { type: 'biometry', save: true, user_id: stud.access_id, sync: false });
+  await device('/result', { deviceId: '0M0100/001' });
+  p = await device('/push', { deviceId: '0M0100/001' }, 'GET');
+  assert.equal(p.body.endpoint, 'execute_actions');
+  await device('/result', { deviceId: '0M0100/001' });
+  assert.equal((await device('/push', { deviceId: '0M0100/001' }, 'GET')).body, null, 'an empty answer when nothing is queued');
+  const cmds = await owner('GET', `/gyms/${gid}/access/devices/${did}/commands`);
+  assert.deepEqual(cmds.body.commands.map(c => c.status), ['done', 'done', 'done']);
+
+  const logs = await owner('GET', `/gyms/${gid}/access/logs`);
+  assert.ok(logs.body.logs.length >= 4);
+  assert.equal(logs.body.today.present, 1);
+  const devs = await owner('GET', `/gyms/${gid}/access/devices`);
+  assert.equal(devs.body.devices[0].online, true);
+
+  // Generic bridge for other brands: a token, shown once.
+  const gen = await owner('POST', `/gyms/${gid}/access/devices`, { name: 'Henry recepção', kind: 'generic' });
+  assert.ok(gen.body.token);
+  const check = (token, body) => fetch(base + '/api/saas/access/check', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+  assert.equal((await check('wrong', { identifier: '1' })).status, 401);
+  const coachRow = (await owner('GET', `/gyms/${gid}/members?role=staff`)).body.members.find(m => m.role === 'trainer');
+  const ok = await (await check(gen.body.token, { identifier: String(coachRow.access_id) })).json();
+  assert.equal(ok.allow, true);
+  // Trainers cannot add devices.
+  assert.equal((await h.as('coach')('POST', `/gyms/${gid}/access/devices`, { name: 'x', kind: 'generic' })).status, 403);
+  assert.equal(h.stackFrames(), 0, h.log);
+});

@@ -2,9 +2,11 @@
 
 Plataforma SaaS de gestão de academias com app de treino para alunos.
 
-Cada academia se cadastra com o próprio nome e logo e administra, no mesmo sistema:
+Cada academia se cadastra com o próprio nome, logo e, se quiser, domínio próprio, e administra, no mesmo sistema:
 
-- **Pessoas:** alunos, instrutores e administradores, com acesso por código de convite.
+- **Entrada única:** o mesmo login leva o dono e a equipe ao painel da academia e o aluno ao app de treino. A primeira conta criada é a dona da plataforma.
+- **Pessoas:** alunos, instrutores e administradores. Alunos entram pelo link de cadastro da academia (ou pelo domínio próprio dela) ou com código de convite.
+- **Catracas:** entrada pela digital. A catraca Control iD pergunta ao sistema, que confere cadastro e mensalidade e libera o giro. Outras marcas se conectam por token. Tem também recepção manual e o registro de todas as entradas.
 - **Treino:** o instrutor monta fichas com a biblioteca de exercícios e atribui aos alunos. O aluno recebe a ficha no app e treina por ele.
 - **Financeiro:** planos, mensalidades, cobranças, entradas e saídas, fluxo de caixa por categoria e forma de pagamento.
 - **Insumos e compras:** material de limpeza e de consumo, fornecedores e pedidos de compra. Receber um pedido atualiza o estoque e lança a despesa.

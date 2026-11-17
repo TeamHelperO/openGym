@@ -59,8 +59,11 @@ export function LoadError({ error, retry }) {
   return <div className="sa-error">{error.message || 'Não foi possível carregar.'} {retry && <Btn onClick={retry}>Tentar de novo</Btn>}</div>
 }
 
-export function Field({ label, hint, children, wide }) {
-  return <label className={'sa-field' + (wide ? ' wide' : '')}><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>
+// A label around one input. `group` for a row of controls (buttons beside a field): a <label>
+// would name every control inside it after the label text.
+export function Field({ label, hint, children, wide, group }) {
+  const Tag = group ? 'div' : 'label'
+  return <Tag className={'sa-field' + (wide ? ' wide' : '')} {...(group ? { role: 'group', 'aria-label': label } : {})}><span>{label}</span>{children}{hint && <small>{hint}</small>}</Tag>
 }
 export const Input = props => <input className="sa-input" {...props} />
 export const Area = props => <textarea className="sa-input" rows={3} {...props} />

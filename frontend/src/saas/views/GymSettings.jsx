@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import { sa } from '../api.js'
 import { useGym } from '../SaasApp.jsx'
-import { PageHead, Card, Btn, Field, Input, Area, act } from '../ui.jsx'
+import { PageHead, Card, Btn, Field, Input, Area, act, notify } from '../ui.jsx'
+import QrCanvas from '../../components/QrCanvas.jsx'
+import { appBase } from '../../lib/app-base.js'
 
 // A logo is scaled down in the browser before upload: at most 512 px on its longest side.
 function shrink(file) {
@@ -28,12 +30,17 @@ export default function GymSettings() {
   const [f, setF] = useState({
     name: gym.name, legalName: gym.legal_name, document: gym.document, email: gym.email, phone: gym.phone, address: gym.address,
     primaryColor: gym.primary_color, defaultDueDay: gym.settings?.defaultDueDay || 10, allowCredit: gym.settings?.allowCredit !== false,
-    welcomeMessage: gym.settings?.welcomeMessage || ''
+    welcomeMessage: gym.settings?.welcomeMessage || '', customDomain: gym.custom_domain || '',
+    publicSignup: gym.settings?.publicSignup !== false,
+    blockOverdue: gym.settings?.access?.blockOverdue !== false, graceDays: gym.settings?.access?.graceDays ?? 5,
+    requirePlan: gym.settings?.access?.requirePlan === true
   })
+  const signupUrl = `${location.origin}${appBase().replace(/\/$/, '')}/#/a/${gym.slug}`
   const set = k => e => setF(x => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const save = async () => {
-    const { defaultDueDay, allowCredit, welcomeMessage, ...rest } = f
-    const r = await act(() => sa.put(`/gyms/${gym.id}`, { ...rest, settings: { defaultDueDay: Number(defaultDueDay), allowCredit, welcomeMessage } }), 'Configurações salvas')
+    const { defaultDueDay, allowCredit, welcomeMessage, publicSignup, blockOverdue, graceDays, requirePlan, ...rest } = f
+    const settings = { defaultDueDay: Number(defaultDueDay), allowCredit, welcomeMessage, publicSignup, access: { blockOverdue, graceDays: Number(graceDays), requirePlan } }
+    const r = await act(() => sa.put(`/gyms/${gym.id}`, { ...rest, settings }), 'Configurações salvas')
     if (r) reloadGym()
   }
   const upload = async e => {
@@ -56,7 +63,7 @@ export default function GymSettings() {
         </div>
         <div className="sa-form">
           <Field label="Nome da academia"><Input value={f.name} onChange={set('name')} /></Field>
-          <Field label="Cor principal"><div className="sa-row"><input type="color" value={f.primaryColor} onChange={set('primaryColor')} /><Input value={f.primaryColor} onChange={set('primaryColor')} maxLength={7} /></div></Field>
+          <Field group label="Cor principal"><div className="sa-row"><input type="color" value={f.primaryColor} onChange={set('primaryColor')} /><Input value={f.primaryColor} onChange={set('primaryColor')} maxLength={7} /></div></Field>
           <Field label="Mensagem de boas-vindas para os alunos"><Area value={f.welcomeMessage} onChange={set('welcomeMessage')} /></Field>
         </div>
       </Card>
@@ -75,9 +82,36 @@ export default function GymSettings() {
           <label className="sa-check"><input type="checkbox" checked={f.allowCredit} onChange={set('allowCredit')} /> Permitir venda fiado no PDV (vira cobrança na conta do aluno)</label>
         </div>
       </Card>
-      <Card title="Endereço de acesso">
-        <p className="sa-muted">Identificador da academia: <strong>{gym.slug}</strong></p>
-        <p className="sa-muted">Alunos e equipe entram com o código de convite gerado no cadastro de cada pessoa.</p>
+      <Card title="Link de cadastro dos alunos">
+        <p className="sa-muted">Quem cria a conta por este link entra direto como aluno da academia e aparece em Alunos. Divulgue no Instagram, no WhatsApp ou imprima o QR code na recepção.</p>
+        <div className="sa-link-box">
+          <QrCanvas value={signupUrl} size={132} />
+          <div className="sa-form" style={{ flex: 1, minWidth: 220 }}>
+            <code className="small-code">{signupUrl}</code>
+            <div className="sa-row wrap">
+              <Btn onClick={() => { Promise.resolve().then(() => navigator.clipboard?.writeText(signupUrl)).then(() => notify('Link copiado')).catch(() => {}) }}>Copiar link</Btn>
+              <a className="sa-btn" href={`https://wa.me/?text=${encodeURIComponent(`Faça seu cadastro na ${gym.name}: ${signupUrl}`)}`} target="_blank" rel="noreferrer">Enviar por WhatsApp</a>
+            </div>
+          </div>
+        </div>
+        <label className="sa-check"><input type="checkbox" checked={f.publicSignup} onChange={set('publicSignup')} /> Aceitar cadastro de alunos pelo link (desligado: só com código de convite)</label>
+      </Card>
+      <Card title="Domínio próprio (opcional)">
+        <p className="sa-muted">Ex.: <code>app.suaacademia.com.br</code>. Quem abrir esse endereço vê a logo e o nome da academia e, ao criar a conta, já entra como aluno.</p>
+        <Field label="Domínio"><Input value={f.customDomain} onChange={set('customDomain')} placeholder="app.suaacademia.com.br" /></Field>
+        <ol className="sa-steps sa-muted small">
+          <li>No provedor do domínio, crie um registro <strong>CNAME</strong> apontando <code>{f.customDomain || 'app.suaacademia.com.br'}</code> para <code>{location.hostname}</code>.</li>
+          <li>Salve aqui. O certificado HTTPS é emitido pelo servidor da plataforma (configuração do administrador, ver docs/SAAS.md).</li>
+          <li>Nesse endereço o login é por e-mail e senha (as chaves de acesso ficam presas ao endereço principal).</li>
+        </ol>
+      </Card>
+      <Card title="Regras da catraca">
+        <div className="sa-form">
+          <label className="sa-check"><input type="checkbox" checked={f.blockOverdue} onChange={set('blockOverdue')} /> Bloquear aluno com mensalidade atrasada</label>
+          {f.blockOverdue && <Field label="Dias de tolerância depois do vencimento"><Input type="number" min={0} max={60} value={f.graceDays} onChange={set('graceDays')} /></Field>}
+          <label className="sa-check"><input type="checkbox" checked={f.requirePlan} onChange={set('requirePlan')} /> Só liberar aluno com plano ativo</label>
+          <p className="sa-muted small">Instrutores e administradores sempre entram. Aluno inativo nunca entra.</p>
+        </div>
       </Card>
     </div>
   </>

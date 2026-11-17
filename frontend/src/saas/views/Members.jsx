@@ -38,7 +38,8 @@ export default function Members({ kind }) {
   }
   const staff = kind === 'staff'
   const columns = [
-    { key: 'name', label: 'Nome', render: m => <><strong>{m.name}</strong>{m.email && <div className="sa-muted small">{m.email}</div>}</> },
+    { key: 'name', label: 'Nome', render: m => <><strong>{m.name}</strong>{m.joined_via === 'link' && <> <Pill tone="ok">pelo link</Pill></>}{m.email && <div className="sa-muted small">{m.email}</div>}</> },
+    { key: 'access_id', label: 'Nº acesso', align: 'right' },
     ...(staff ? [{ key: 'role', label: 'Papel', render: m => ROLE_LABEL[m.role] }] : [
       { key: 'trainer_name', label: 'Instrutor', render: m => m.trainer_name || '–' },
       { key: 'goal', label: 'Objetivo', render: m => m.goal || '–' },

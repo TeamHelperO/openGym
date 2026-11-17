@@ -69,7 +69,7 @@ function Sell({ gym, session, reloadCash }) {
       {over.length > 0 && <p className="sa-error">Quantidade acima do estoque.</p>}
       <div className="sa-form">
         <Field label="Desconto"><MoneyInput value={cart.discountCents} onChange={v => setCart({ ...cart, discountCents: v || 0 })} /></Field>
-        <Field label="Pagamento"><div className="sa-seg">{SALE_METHODS.map(m => <button type="button" key={m} className={method === m ? 'on' : ''} onClick={() => setMethod(m)}>{m === 'account' ? 'Fiado' : PAYMENT_LABEL[m]}</button>)}</div></Field>
+        <Field group label="Pagamento"><div className="sa-seg">{SALE_METHODS.map(m => <button type="button" key={m} className={method === m ? 'on' : ''} onClick={() => setMethod(m)}>{m === 'account' ? 'Fiado' : PAYMENT_LABEL[m]}</button>)}</div></Field>
         {method === 'cash' && <Field label="Valor recebido"><MoneyInput value={paid ?? t.total} onChange={setPaid} /></Field>}
         <Field label={method === 'account' ? 'Aluno (obrigatório)' : 'Aluno (opcional)'}><Select value={memberId} onChange={setMemberId} placeholder="Cliente avulso" options={(students.data?.members || []).map(m => ({ value: m.id, label: m.name }))} /></Field>
       </div>

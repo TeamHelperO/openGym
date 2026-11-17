@@ -17,6 +17,8 @@ import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { createSaas } from './saas/router.js';
+import { createDeviceGateway } from './saas/device-gateway.js';
+import { openDb } from './saas/db.js';
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
 import { dayReminderPush, nudgePush, restTimerPush, testPush } from './push-messages.js';
@@ -2926,6 +2928,9 @@ const routes = {
 // Parameterised paths under /api/saas/ (saas/router.js), matched after the flat table above.
 // They go through the same origin check and error handling as every other route.
 const saas = createSaas({ json, readBody, readSession, isAdmin, users: () => db.users, readState, dataDir: DATA });
+// Turnstiles (Control iD) call fixed paths at the server's root with no session or Origin; they
+// are recognised by serial number in saas/device-gateway.js and never reach the route table.
+const devices = createDeviceGateway({ db: () => openDb(DATA) });
 
 /* ---------- Coach: boot recovery, notifications, scheduled reviews ---------- */
 // A job that was running when the process died is not coming back; say so rather than leaving
@@ -3010,6 +3015,11 @@ const server = http.createServer(async (req, res) => {
   // above stays a plain lookup, and so csrfOk and the catch-all see one name for every file.
   const mm = /^\/api\/media\/([0-9a-f]{64})$/.exec(url.pathname);
   if (mm) { key = req.method + ' /api/media/{hash}'; req.mediaHash = mm[1]; }
+  const deviceHandler = devices.match(req.method, url.pathname);
+  if (deviceHandler) {
+    try { return await deviceHandler(req, res, url); }
+    catch (e) { console.error('device', key, e); if (!res.headersSent) return json(res, 500, { error: 'server error' }); return; }
+  }
   let handler = routes[key];
   if (!handler) {
     const saasHandler = saas.match(req.method, url.pathname);

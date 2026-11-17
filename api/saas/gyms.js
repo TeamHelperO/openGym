@@ -6,6 +6,11 @@ import { tx } from './db.js';
 import { seedCategories } from './ledger.js';
 import { str, bad, notFound, slugify, SaasError } from './util.js';
 import { todayDate, monthRange, monthOf } from './calc.js';
+import { nextAccessId } from './members.js';
+
+// An academy's own address: a plain host name, lower case, no scheme, port or path.
+const DOMAIN = /^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+export const hostOf = req => String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim().toLowerCase().replace(/:\d+$/, '');
 
 const LOGO_MAX = 1024 * 1024;
 const LOGO_TYPES = [
@@ -20,7 +25,20 @@ export function publicGym(g) {
   const { settings_json, created_by, logo_file, ...rest } = g;
   let settings = {};
   try { settings = JSON.parse(settings_json || '{}'); } catch { /* keep {} */ }
-  return { ...rest, settings, logoUrl: logo_file ? `/api/saas/gyms/${g.id}/logo?v=${g.logo_version}` : null };
+  return { ...rest, settings, logoUrl: logo_file ? `/api/saas/gyms/${g.id}/logo?v=${g.logo_version}` : null, signupPath: `#/a/${g.slug}` };
+}
+
+/** What a visitor sees of an academy before signing in: its face, never its data. */
+export function brandOf(g) {
+  if (!g) return null;
+  let settings = {};
+  try { settings = JSON.parse(g.settings_json || '{}'); } catch { /* defaults */ }
+  return {
+    id: g.id, name: g.name, slug: g.slug, primary_color: g.primary_color, status: g.status,
+    logoUrl: g.logo_file ? `/api/saas/gyms/${g.id}/logo?v=${g.logo_version}` : null,
+    publicSignup: settings.publicSignup !== false && g.status === 'active',
+    welcomeMessage: settings.welcomeMessage || ''
+  };
 }
 
 export function registerGyms(route, { db, audit, newId, nowIso, dataDir }) {
@@ -60,13 +78,49 @@ export function registerGyms(route, { db, audit, newId, nowIso, dataDir }) {
         str(b.email, 'e-mail', { opt: true, max: 160 }), str(b.phone, 'telefone', { opt: true, max: 40 }),
         str(b.address, 'endereço', { opt: true, max: 300 }), COLOR.test(b.primaryColor || '') ? b.primaryColor : '#2563eb',
         ctx.user.id, now);
-      db().prepare(`INSERT INTO memberships (id, gym_id, user_id, role, name, created_at, updated_at) VALUES (?, ?, ?, 'gym_admin', ?, ?, ?)`)
+      db().prepare(`INSERT INTO memberships (id, gym_id, user_id, role, name, created_at, updated_at, access_id) VALUES (?, ?, ?, 'gym_admin', ?, ?, ?, 1001)`)
         .run(newId(), id, ctx.user.id, ctx.user.name || 'Administrador', now, now);
       seedCategories(db(), id);
     });
     ctx.gym = { id };
     audit(ctx, 'gym.create', { name });
     return { __status: 201, body: publicGym(db().prepare('SELECT * FROM gyms WHERE id = ?').get(id)) };
+  });
+
+  /* ---- an academy's own front door: its signup link and its own domain ---- */
+
+  // The academy behind a signup link (?slug=) or behind the address the app was opened at.
+  route('GET', '/public/gym', 'public', ctx => {
+    const slug = ctx.query.get('slug');
+    const g = slug
+      ? db().prepare('SELECT * FROM gyms WHERE slug = ?').get(String(slug).toLowerCase())
+      : db().prepare('SELECT * FROM gyms WHERE custom_domain = ?').get(hostOf(ctx.req));
+    return { gym: brandOf(g) };
+  });
+
+  // For a reverse proxy that issues certificates on demand (Caddy's on_demand_tls "ask"): 200 only
+  // for a domain an academy has claimed, so nobody can make the server request certificates at will.
+  route('GET', '/public/domain-check', 'public', ctx => {
+    const d = String(ctx.query.get('domain') || '').toLowerCase();
+    const g = d && db().prepare("SELECT 1 FROM gyms WHERE custom_domain = ? AND status = 'active'").get(d);
+    if (!g) return { __status: 404, body: { ok: false } };
+    return { ok: true };
+  });
+
+  // Signing up through an academy's link: the profile becomes one of its students.
+  route('POST', '/public/join/:slug', 'user', async ctx => {
+    const g = db().prepare('SELECT * FROM gyms WHERE slug = ?').get(String(ctx.params.slug).toLowerCase());
+    const brand = brandOf(g);
+    if (!brand) throw notFound('academia');
+    const have = db().prepare('SELECT * FROM memberships WHERE gym_id = ? AND user_id = ?').get(g.id, ctx.user.id);
+    if (have) return { gym: publicGym(g), role: have.role, memberId: have.id, already: true };
+    if (!brand.publicSignup) throw new SaasError(403, 'esta academia não aceita cadastro pelo link. Peça um código de convite na recepção.');
+    const id = newId(); const now = nowIso();
+    db().prepare(`INSERT INTO memberships (id, gym_id, user_id, role, name, email, joined_via, created_at, updated_at, access_id)
+      VALUES (?, ?, ?, 'student', ?, ?, 'link', ?, ?, ?)`).run(id, g.id, ctx.user.id, ctx.user.name || 'Aluno', ctx.user.email || '', now, now, nextAccessId(db(), g.id));
+    ctx.gym = g;
+    audit(ctx, 'member.signup-link', { memberId: id });
+    return { __status: 201, body: { gym: publicGym(g), role: 'student', memberId: id } };
   });
 
   // A person who got an invite code from an academy links it to the profile they are signed in with.
@@ -97,6 +151,13 @@ export function registerGyms(route, { db, audit, newId, nowIso, dataDir }) {
       email: b.email !== undefined ? str(b.email, 'e-mail', { opt: true, max: 160 }) : g.email,
       phone: b.phone !== undefined ? str(b.phone, 'telefone', { opt: true, max: 40 }) : g.phone,
       address: b.address !== undefined ? str(b.address, 'endereço', { opt: true, max: 300 }) : g.address,
+      custom_domain: b.customDomain !== undefined ? (() => {
+        const d = String(b.customDomain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+        if (!d) return null;
+        if (!DOMAIN.test(d)) throw bad('domínio inválido. Ex.: app.minhaacademia.com.br');
+        if (db().prepare('SELECT 1 FROM gyms WHERE custom_domain = ? AND id != ?').get(d, g.id)) throw bad('este domínio já está em uso por outra academia');
+        return d;
+      })() : g.custom_domain,
       primary_color: b.primaryColor !== undefined ? (COLOR.test(b.primaryColor) ? b.primaryColor : (() => { throw bad('cor inválida, use #RRGGBB'); })()) : g.primary_color
     };
     let settings = {};
@@ -110,9 +171,21 @@ export function registerGyms(route, { db, audit, newId, nowIso, dataDir }) {
         settings.defaultDueDay = d;
       }
       if (s.welcomeMessage !== undefined) settings.welcomeMessage = str(s.welcomeMessage, 'mensagem', { opt: true, max: 500 });
+      if (s.publicSignup !== undefined) settings.publicSignup = !!s.publicSignup;
+      if (s.access && typeof s.access === 'object') {
+        const a = s.access, cur = settings.access || {};
+        if (a.blockOverdue !== undefined) cur.blockOverdue = !!a.blockOverdue;
+        if (a.requirePlan !== undefined) cur.requirePlan = !!a.requirePlan;
+        if (a.graceDays !== undefined) {
+          const n = Number(a.graceDays);
+          if (!Number.isInteger(n) || n < 0 || n > 60) throw bad('tolerância deve ser de 0 a 60 dias');
+          cur.graceDays = n;
+        }
+        settings.access = cur;
+      }
     }
-    db().prepare(`UPDATE gyms SET name = ?, legal_name = ?, document = ?, email = ?, phone = ?, address = ?, primary_color = ?, settings_json = ? WHERE id = ?`)
-      .run(next.name, next.legal_name, next.document, next.email, next.phone, next.address, next.primary_color, JSON.stringify(settings), g.id);
+    db().prepare(`UPDATE gyms SET name = ?, legal_name = ?, document = ?, email = ?, phone = ?, address = ?, primary_color = ?, custom_domain = ?, settings_json = ? WHERE id = ?`)
+      .run(next.name, next.legal_name, next.document, next.email, next.phone, next.address, next.primary_color, next.custom_domain, JSON.stringify(settings), g.id);
     audit(ctx, 'gym.update', {});
     return { gym: publicGym(db().prepare('SELECT * FROM gyms WHERE id = ?').get(g.id)) };
   });
@@ -173,7 +246,18 @@ export function registerGyms(route, { db, audit, newId, nowIso, dataDir }) {
       workouts: count('SELECT COUNT(*) AS n FROM workout_templates WHERE gym_id = ? AND archived = 0', gid),
       activeAssignments: count("SELECT COUNT(*) AS n FROM workout_assignments WHERE gym_id = ? AND status = 'active'", gid),
       studentsWithoutWorkout: count(`SELECT COUNT(*) AS n FROM memberships m WHERE m.gym_id = ? AND m.role = 'student' AND m.status = 'active'
-        AND NOT EXISTS (SELECT 1 FROM workout_assignments a WHERE a.student_member_id = m.id AND a.status = 'active')`, gid)
+        AND NOT EXISTS (SELECT 1 FROM workout_assignments a WHERE a.student_member_id = m.id AND a.status = 'active')`, gid),
+      presentToday: count("SELECT COUNT(DISTINCT member_id) AS n FROM access_logs WHERE gym_id = ? AND allowed = 1 AND substr(at, 1, 10) = ?", gid, new Date().toISOString().slice(0, 10)),
+      // What a new academy still has to set up, for the dashboard's first-steps list.
+      setup: {
+        logo: !!ctx.gym.logo_file,
+        plans: count('SELECT COUNT(*) AS n FROM plans WHERE gym_id = ?', gid) > 0,
+        staff: count("SELECT COUNT(*) AS n FROM memberships WHERE gym_id = ? AND role = 'trainer'", gid) > 0,
+        students: count("SELECT COUNT(*) AS n FROM memberships WHERE gym_id = ? AND role = 'student'", gid) > 0,
+        workouts: count('SELECT COUNT(*) AS n FROM workout_templates WHERE gym_id = ?', gid) > 0,
+        devices: count('SELECT COUNT(*) AS n FROM access_devices WHERE gym_id = ?', gid) > 0,
+        products: count('SELECT COUNT(*) AS n FROM products WHERE gym_id = ?', gid) > 0
+      }
     };
     if (ctx.role !== 'gym_admin') {
       const mine = ctx.member ? count("SELECT COUNT(*) AS n FROM memberships WHERE gym_id = ? AND trainer_member_id = ? AND status = 'active'", gid, ctx.member.id) : 0;

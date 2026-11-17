@@ -194,3 +194,20 @@ textarea.sa-input{resize:vertical}
   .sa-stats{grid-template-columns:repeat(2,1fr)}
   .sa-solo{padding:calc(var(--sat) + 16px) 14px 32px}
 }
+
+/* turnstiles */
+.sa-steps{padding-left:20px;line-height:1.55}
+.sa-steps li{margin:6px 0}
+.sa-pre{background:var(--bg);border:1px solid var(--sep-op);border-radius:10px;padding:12px;overflow-x:auto;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+.sa-verdict{margin-top:14px;padding:14px;border-radius:12px;font-size:16px}
+.sa-verdict.ok{background:rgba(48,209,88,.12)}
+body.saas-wide code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+.small-code{font-size:14px;padding:6px 8px;display:inline-block;letter-spacing:0;user-select:all;word-break:break-all}
+.sa-link-box{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.sa-link-box canvas{background:#fff;border-radius:10px;padding:8px}
+.sa-checklist{list-style:none;padding:0;margin:0}
+.sa-checklist li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--sep-op)}
+.sa-checklist li .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--surface-2);color:var(--label-2);flex:none}
+.sa-checklist li.done .dot{background:var(--green);color:#fff}
+.sa-checklist li.done span{color:var(--label-2);text-decoration:line-through}
+.sa-checklist li a{margin-left:auto}

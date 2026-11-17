@@ -8,6 +8,11 @@ import { createSubscription } from './finance.js';
 
 const ROLE_FIELDS = ['gym_admin', 'trainer', 'student'];
 
+/** The next turnstile number of an academy (the person's user id on its devices). From 1001. */
+export function nextAccessId(db, gymId) {
+  return (db.prepare('SELECT MAX(access_id) AS m FROM memberships WHERE gym_id = ?').get(gymId).m || 1000) + 1;
+}
+
 export function memberView(m, { withCode = false, userById } = {}) {
   if (!m) return null;
   const { settings_json, invite_code, ...rest } = m;
@@ -74,12 +79,12 @@ export function registerMembers(route, { db, audit, rand, newId, nowIso, userByI
     let trainerId = checkTrainer(ctx.gym.id, b.trainerMemberId || null);
     if (!trainerId && role === 'student' && ctx.role === 'trainer') trainerId = ctx.member?.id || null;
     tx(db(), () => {
-      db().prepare(`INSERT INTO memberships (id, gym_id, role, name, email, phone, document, birth_date, goal, health_notes, notes, trainer_member_id, invite_code, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ctx.gym.id, role,
+      db().prepare(`INSERT INTO memberships (id, gym_id, role, name, email, phone, document, birth_date, goal, health_notes, notes, trainer_member_id, invite_code, created_at, updated_at, access_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ctx.gym.id, role,
         str(b.name, 'nome', { max: 120 }), str(b.email, 'e-mail', { opt: true, max: 160 }), str(b.phone, 'telefone', { opt: true, max: 40 }),
         str(b.document, 'CPF', { opt: true, max: 30 }), date(b.birthDate, 'data de nascimento', { opt: true }),
         str(b.goal, 'objetivo', { opt: true, max: 300 }), str(b.healthNotes, 'observações de saúde', { opt: true, max: 2000 }),
-        str(b.notes, 'observações', { opt: true, max: 2000 }), trainerId, code, now, now);
+        str(b.notes, 'observações', { opt: true, max: 2000 }), trainerId, code, now, now, nextAccessId(db(), ctx.gym.id));
       if (role === 'student' && b.planId && ctx.role === 'gym_admin') {
         createSubscription(db(), { gymId: ctx.gym.id, memberId: id, planId: b.planId, startDate: b.startDate, dueDay: b.dueDay, gym: ctx.gym });
       }

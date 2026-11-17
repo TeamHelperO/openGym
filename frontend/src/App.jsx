@@ -46,6 +46,9 @@ import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Workout from './views/Workout.jsx'
+// The academy platform's small always-loaded part: link/domain signup and the landing by role.
+import SaasBoot, { JoinRoute } from './saas/SaasBoot.jsx'
+import { detectJoin } from './saas/join.js'
 
 // Screens most sessions never open (the Coach, the admin dashboard, photos, measurements, the
 // balance check) are their own chunks rather than part of the code every start parses: ~200 KB
@@ -281,6 +284,8 @@ function Shell() {
   const noTabs = inWorkout || inSaas || loc.pathname === '/coach' || needsMobileOnboarding || permSteps
 
   const authed = user || isGuest
+  // The academy behind a signup link or the domain the app was opened at, for the sign-in screen.
+  useEffect(() => { if (!user) detectJoin() }, [user])
   // The boot screen in index.html covers the start; it goes once there is something to show.
   useEffect(() => { if (ready || authed) hideBoot() }, [ready, authed])
   if (!ready && !authed) return (
@@ -319,6 +324,8 @@ function Shell() {
       <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
       {/* Academy management: needs a server account (a guest or a phone in local mode has none). */}
       <Route path="/gestao/*" element={user ? <SaasApp /> : <Navigate to="/home" replace />} />
+      {/* An academy's signup link (#/a/<slug>): SaasBoot joins it once the person is signed in. */}
+      <Route path="/a/:slug" element={<JoinRoute />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   ))
@@ -341,6 +348,7 @@ function Shell() {
           would ride along with the page for the length of it. Decides for itself when to show —
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
+      {user && <SaasBoot user={user} />}
       {!noTabs && <TabBar onStart={startFlow} />}
       <RestTimer />
       <Modals />

@@ -163,6 +163,16 @@ describe('what nginx forwards to the API', () => {
     for (const to of passes) expect(to).toBe('$api_upstream$api_request_uri')
   })
 
+  it('the turnstile block reaches only the fixed device paths at the root', () => {
+    const conf = render('/gym')
+    const m = conf.match(/location ~ \^\/\(([^$]+)\)\$ \{([^}]*)\}/)
+    expect(m).toBeTruthy()
+    expect(m[2]).toMatch(/proxy_pass \$device_upstream\$request_uri;/)
+    const rx = new RegExp('^/(' + m[1] + ')$')
+    for (const p of ['/push', '/result', '/new_user_identified.fcgi', '/new_card.fcgi', '/device_is_alive.fcgi']) expect(rx.test(p)).toBe(true)
+    for (const p of ['/api/data', '/push/x', '/gym/push', '/index.html', '/login.fcgi']) expect(rx.test(p)).toBe(false)
+  })
+
   it('takes a passed-through prefix off, query and all', () => {
     expect(forwarded('/gym', '/gym/api/health')).toBe('/api/health')
     expect(forwarded('/gym', '/gym/api/login/options?x=1')).toBe('/api/login/options?x=1')

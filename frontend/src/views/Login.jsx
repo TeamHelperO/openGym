@@ -1,4 +1,5 @@
 import { BRAND } from '../lib/brand.js'
+import { pendingJoin, onJoinChange } from '../saas/join.js'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, passkeyError, bio } from '../lib/api.js'
@@ -67,6 +68,13 @@ function RegisterSheet({ close }) {
   </>
 }
 
+// The academy remembered from a signup link or its own domain (saas/join.js), live.
+function useJoinBrand() {
+  const [b, setB] = useState(() => pendingJoin())
+  useEffect(() => onJoinChange(setB), [])
+  return b
+}
+
 export default function Login() {
   const { setUser, adoptProfile, setGuest } = useStore()
   const config = useStore(s => s.config)
@@ -77,7 +85,15 @@ export default function Login() {
     try { const u = await passkeyLogin(); setUser(u, { adopt: true }); await adoptProfile(askAddDeviceData); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
     catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(passkeyError(e, t('Sign-in failed'))) }
   }
-  const head = <>
+  // Opened through an academy's signup link or domain: its logo and name instead of ours.
+  const gymBrand = useJoinBrand()
+  const head = gymBrand ? <>
+    {gymBrand.logoUrl
+      ? <img src={gymBrand.logoUrl} alt="" style={{ width: 88, height: 88, objectFit: 'contain', borderRadius: 18, margin: '0 auto', background: '#fff' }} />
+      : <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: gymBrand.color || 'var(--acc)' }}><Icon name="dumbbell" /></div>}
+    <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.028em', margin: '10px 0 4px' }}>{gymBrand.name}</h1>
+    <div className="muted small" style={{ marginBottom: 6 }}>{gymBrand.publicSignup === false ? 'Entre com sua conta. Para participar, peça um código na recepção.' : 'Crie sua conta ou entre para fazer parte da academia.'}</div>
+  </> : <>
     <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="dumbbell" /></div>
     <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.028em', margin: '10px 0 4px' }}>{BRAND}</h1>
   </>

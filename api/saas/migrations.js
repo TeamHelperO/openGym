@@ -291,5 +291,67 @@ export const MIGRATIONS = [
     at TEXT NOT NULL
   );
   CREATE INDEX audit_log_gym ON audit_log(gym_id, at);
+  `,
+  /* 2: own domain and signup link per academy, turnstiles (devices, access log, command queue) */
+  `
+  ALTER TABLE gyms ADD COLUMN custom_domain TEXT;
+  CREATE UNIQUE INDEX gyms_custom_domain ON gyms(custom_domain) WHERE custom_domain IS NOT NULL;
+
+  ALTER TABLE memberships ADD COLUMN access_id INTEGER;
+  ALTER TABLE memberships ADD COLUMN card_number TEXT;
+  ALTER TABLE memberships ADD COLUMN joined_via TEXT NOT NULL DEFAULT 'invite';
+  UPDATE memberships SET access_id = 1000 + (
+    SELECT COUNT(*) FROM memberships m2 WHERE m2.gym_id = memberships.gym_id AND m2.rowid <= memberships.rowid);
+  CREATE UNIQUE INDEX memberships_access_id ON memberships(gym_id, access_id) WHERE access_id IS NOT NULL;
+  CREATE UNIQUE INDEX memberships_card ON memberships(gym_id, card_number) WHERE card_number IS NOT NULL AND card_number != '';
+
+  CREATE TABLE access_devices (
+    id TEXT PRIMARY KEY,
+    gym_id TEXT NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('controlid','generic')),
+    serial TEXT,
+    token_hash TEXT,
+    release_action TEXT NOT NULL DEFAULT 'catra_clockwise',
+    allowed_ip TEXT NOT NULL DEFAULT '',
+    active INTEGER NOT NULL DEFAULT 1,
+    last_seen_at TEXT,
+    last_ip TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX access_devices_serial ON access_devices(serial) WHERE serial IS NOT NULL AND serial != '';
+  CREATE UNIQUE INDEX access_devices_token ON access_devices(token_hash) WHERE token_hash IS NOT NULL;
+
+  CREATE TABLE access_logs (
+    id TEXT PRIMARY KEY,
+    gym_id TEXT NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+    device_id TEXT REFERENCES access_devices(id) ON DELETE SET NULL,
+    member_id TEXT REFERENCES memberships(id) ON DELETE SET NULL,
+    identifier TEXT NOT NULL DEFAULT '',
+    method TEXT NOT NULL DEFAULT 'fingerprint',
+    allowed INTEGER NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    by_user TEXT,
+    at TEXT NOT NULL
+  );
+  CREATE INDEX access_logs_gym_at ON access_logs(gym_id, at);
+  CREATE INDEX access_logs_member ON access_logs(member_id, at);
+
+  CREATE TABLE device_commands (
+    id TEXT PRIMARY KEY,
+    gym_id TEXT NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+    device_id TEXT NOT NULL REFERENCES access_devices(id) ON DELETE CASCADE,
+    purpose TEXT NOT NULL,
+    member_id TEXT REFERENCES memberships(id) ON DELETE SET NULL,
+    verb TEXT NOT NULL DEFAULT 'POST',
+    endpoint TEXT NOT NULL,
+    body_json TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','sent','done','failed','canceled')),
+    result_json TEXT,
+    created_at TEXT NOT NULL,
+    sent_at TEXT,
+    done_at TEXT
+  );
+  CREATE INDEX device_commands_queue ON device_commands(device_id, status, created_at);
   `
 ];

@@ -1,5 +1,5 @@
 // The academy's dashboard: people, training coverage and, for administrators, money and stock.
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { sa } from '../api.js'
 import { useGym } from '../SaasApp.jsx'
 import { useLoad, PageHead, Card, Stat, Loading, LoadError, Money, Table, Empty, Btn } from '../ui.jsx'
@@ -15,6 +15,28 @@ function Bars({ daily }) {
       <small>{d.date.slice(8)}</small>
     </div>)}
   </div>
+}
+
+// The academy's first steps, until they are all done.
+function FirstSteps({ setup, base, gym }) {
+  const steps = [
+    ['logo', 'Colocar a logo e as cores da academia', 'configuracoes'],
+    ['plans', 'Cadastrar os planos (mensal, trimestral...)', 'financeiro'],
+    ['staff', 'Cadastrar os instrutores', 'equipe'],
+    ['students', 'Trazer os alunos: divulgar o link de cadastro ou cadastrar na recepção', 'configuracoes'],
+    ['workouts', 'Montar as primeiras fichas de treino', 'treinos'],
+    ['devices', 'Conectar a catraca para a entrada pela digital', 'acesso'],
+    ['products', 'Cadastrar os produtos da lojinha (água, suplementos...)', 'pdv']
+  ]
+  if (steps.every(([k]) => setup[k])) return null
+  return <Card title={`Primeiros passos na ${gym.name}`}>
+    <ul className="sa-checklist">
+      {steps.map(([k, label, to], i) => <li key={k} className={setup[k] ? 'done' : ''}>
+        <span className="dot">{setup[k] ? '✓' : i + 1}</span><span>{label}</span>
+        {!setup[k] && <Link className="sa-btn" to={`${base}/${to}`}>Fazer agora</Link>}
+      </li>)}
+    </ul>
+  </Card>
 }
 
 export default function Dashboard() {
@@ -34,8 +56,10 @@ export default function Dashboard() {
       <Stat label="Equipe" value={x.staff} />
       <Stat label="Fichas de treino" value={x.workouts} hint={`${x.activeAssignments} atribuídas`} />
       <Stat label="Alunos sem ficha" value={x.studentsWithoutWorkout} tone={x.studentsWithoutWorkout ? 'warn' : ''} />
+      <Stat label="Entraram hoje" value={x.presentToday} hint="pela catraca ou recepção" />
       {x.myStudents !== undefined && <Stat label="Meus alunos" value={x.myStudents} />}
     </div>
+    {isAdmin && x.setup && <FirstSteps setup={x.setup} base={base} gym={x.gym} />}
     {isAdmin && x.finance && <>
       <div className="sa-stats">
         <Stat label="Entradas do mês" value={money(x.finance.incomeCents)} tone="good" />

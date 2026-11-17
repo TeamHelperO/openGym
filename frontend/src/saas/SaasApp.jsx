@@ -17,6 +17,7 @@ import Pos from './views/Pos.jsx'
 import GymSettings from './views/GymSettings.jsx'
 import StudentHome from './views/StudentHome.jsx'
 import Platform from './views/Platform.jsx'
+import Access from './views/Access.jsx'
 import './saas.css'
 
 const GymCtx = createContext(null)
@@ -35,6 +36,7 @@ const NAV = [
   ['alunos', 'Alunos', ['gym_admin', 'trainer'], '☺'],
   ['equipe', 'Equipe', ['gym_admin'], '✦'],
   ['treinos', 'Fichas de treino', ['gym_admin', 'trainer'], '≡'],
+  ['acesso', 'Catracas e acesso', ['gym_admin', 'trainer'], '⇥'],
   ['pdv', 'PDV / Loja', ['gym_admin', 'trainer'], '⌂'],
   ['financeiro', 'Financeiro', ['gym_admin'], '$'],
   ['insumos', 'Insumos e compras', ['gym_admin'], '▣'],
@@ -88,6 +90,7 @@ function GymLayout({ me }) {
             <Route path="treinos" element={<Workouts />} />
             <Route path="treinos/:workoutId" element={<WorkoutEditor />} />
             <Route path="pdv" element={<Pos />} />
+            <Route path="acesso" element={<Access />} />
           </>}
           {role === 'gym_admin' && <>
             <Route path="financeiro" element={<Finance />} />

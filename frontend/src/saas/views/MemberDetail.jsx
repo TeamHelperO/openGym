@@ -3,10 +3,45 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { sa } from '../api.js'
 import { useGym } from '../SaasApp.jsx'
-import { useLoad, PageHead, Card, Btn, Pill, Modal, Table, Loading, LoadError, Money, Field, Input, Select, MoneyInput, Confirm, act, Stat } from '../ui.jsx'
+import { useLoad, PageHead, Card, Btn, Pill, Modal, Table, Loading, LoadError, Money, Field, Input, Select, MoneyInput, Confirm, act, notify, Stat } from '../ui.jsx'
 import { ROLE_LABEL, dateBR, CHARGE_STATUS, PAYMENT_LABEL, PAYMENT_METHODS, today } from '../lib/format.js'
 import MemberForm, { memberToForm, useMemberForm } from './MemberForm.jsx'
 import { InviteNotice } from './Members.jsx'
+
+// Turnstile side of a person: number, card, fingerprint enrollment, entries.
+function AccessCard({ gym, m }) {
+  const devices = useLoad(() => sa.get(`/gyms/${gym.id}/access/devices`), [gym.id])
+  const logs = useLoad(() => sa.get(`/gyms/${gym.id}/access/logs?memberId=${m.id}`), [gym.id, m.id])
+  const [card, setCard] = useState(m.card_number || '')
+  const [deviceId, setDeviceId] = useState('')
+  const [verdict, setVerdict] = useState(null)
+  const cid = (devices.data?.devices || []).filter(d => d.kind === 'controlid' && d.active)
+  const enroll = async () => {
+    const r = await act(() => sa.post(`/gyms/${gym.id}/members/${m.id}/enroll`, { deviceId: deviceId || cid[0]?.id, type: 'biometry' }))
+    if (r) notify(r.note)
+  }
+  return <Card title="Catraca e acesso" actions={<Btn kind="primary" onClick={async () => { const r = await act(() => sa.post(`/gyms/${gym.id}/access/checkin`, { memberId: m.id })); if (r) { setVerdict(r); logs.reload() } }}>Registrar entrada</Btn>}>
+    {verdict && <div className={verdict.allow ? 'sa-ok sa-verdict ok' : 'sa-error sa-verdict'}><strong>{verdict.allow ? 'Liberado' : 'Negado'}</strong> · {verdict.reason}</div>}
+    <dl className="sa-dl">
+      <dt>Nº de acesso</dt><dd><strong>{m.access_id}</strong> <span className="sa-muted small">(é o número desta pessoa nas catracas)</span></dd>
+    </dl>
+    <div className="sa-form cols">
+      <Field group label="Cartão / chaveiro (opcional)"><div className="sa-row"><Input inputMode="numeric" value={card} onChange={e => setCard(e.target.value)} placeholder="Número impresso no cartão" /><Btn onClick={() => act(() => sa.put(`/gyms/${gym.id}/members/${m.id}/card`, { cardNumber: card }), 'Cartão salvo')}>Salvar</Btn></div></Field>
+      <Field group label="Digital"><div className="sa-row">
+        {cid.length > 1 && <Select value={deviceId} onChange={setDeviceId} options={cid.map(d => ({ value: d.id, label: d.name }))} />}
+        <Btn kind="primary" disabled={!cid.length} onClick={enroll}>Cadastrar digital</Btn>
+      </div></Field>
+    </div>
+    {!cid.length && <p className="sa-muted small">Cadastre uma catraca Control iD em Catracas e acesso para registrar digitais por aqui.</p>}
+    <h3>Últimas entradas</h3>
+    <Table columns={[
+      { key: 'at', label: 'Quando', render: r => dateBR(r.at) + ' ' + new Date(r.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) },
+      { key: 'device_name', label: 'Onde', render: r => r.device_name || 'Recepção' },
+      { key: 'allowed', label: 'Resultado', render: r => (r.allowed ? <Pill tone="ok">Liberado</Pill> : <Pill tone="bad">Negado</Pill>) },
+      { key: 'reason', label: 'Motivo' }
+    ]} rows={(logs.data?.logs || []).slice(0, 15)} empty="Nenhuma entrada registrada." />
+  </Card>
+}
 
 function EditMember({ gym, m, trainers, canRole, onDone, onClose }) {
   const [f, set] = useMemberForm(memberToForm(m))
@@ -103,6 +138,8 @@ export default function MemberDetail() {
         </div>
       </Card>
     </div>
+
+    {m.status === 'active' && <AccessCard gym={gym} m={m} />}
 
     {isStudent && <Card title="Treino" actions={<Btn kind="primary" onClick={() => nav(`${base}/treinos?assign=${m.id}`)}>Atribuir ficha</Btn>}>
       {p && p.linked && <div className="sa-stats">

@@ -22,6 +22,7 @@ import { registerFinance } from './finance.js';
 import { registerSupplies } from './supplies.js';
 import { registerPos } from './pos.js';
 import { registerPlatform } from './platform.js';
+import { registerAccess } from './access.js';
 
 import { saasConfig } from './roles.js';
 export { ROLES, STAFF, ADMIN, saasConfig } from './roles.js';
@@ -57,6 +58,7 @@ export function createSaas(deps) {
   registerSupplies(route, shared);
   registerPos(route, shared);
   registerPlatform(route, shared);
+  registerAccess(route, shared);
 
   async function run(entry, params, req, res, url) {
     const ctx = { req, res, params, query: url.searchParams, user: null, gym: null, member: null, role: null, platformAdmin: false };
