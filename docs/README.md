@@ -19,6 +19,7 @@ to install.
 
 | Guide | Read it when |
 |---|---|
+| [Gestão de academias (SaaS)](SAAS.md) | Plataforma de gestão: academias, alunos, fichas, financeiro, insumos e PDV |
 | [Self-hosting](SELF_HOSTING.md) | You're setting up an instance. Start here: running it, passkeys and HTTPS, users, backups, updates, troubleshooting |
 | [HTTPS at home](SELF_HOSTING_HTTPS.md) | You want valid certificates on your LAN without exposing the server to the internet |
 | [On a Mac](SELF_HOSTING_MAC.md) | You want to run it on a Mac at home, with Colima instead of Docker Desktop and Tailscale for HTTPS |

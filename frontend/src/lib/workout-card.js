@@ -6,6 +6,7 @@
 //   layoutWorkoutCard — where everything goes, given a way to measure text
 //   drawWorkoutCard   — paints a layout onto a 2D canvas context
 // Nothing here stores anything; the workout is read, never written.
+import { BRAND } from './brand.js'
 import { sessionSections, workoutVolume, workoutDuration, workoutDay, doneUnits } from './history.js'
 import { EXIDX } from './exercises.js'
 import { isWarmupRow } from './workout-model.js'
@@ -189,7 +190,7 @@ export function layoutWorkoutCard(model, { measure, rtl = false, width = CARD_WI
 
   y += 64
   const height = Math.max(MIN_HEIGHT, Math.round(y + 34 + PAD))
-  items.push({ kind: 'text', text: 'openGym', x: start, y: height - PAD, size: 34, weight: 700, color: 'acc' })
+  items.push({ kind: 'text', text: BRAND, x: start, y: height - PAD, size: 34, weight: 700, color: 'acc' })
   return { width, height, rtl, items }
 }
 

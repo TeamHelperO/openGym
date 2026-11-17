@@ -33,3 +33,9 @@ test('every root-level module server.js needs is on the Dockerfile COPY line', (
   assert.deepEqual(missing, [], `add ${missing.join(', ')} to the COPY line in api/Dockerfile`);
   for (const f of copied) assert.ok(fs.existsSync(path.join(API, f)), `${f} is copied but does not exist`);
 });
+
+test('the SaaS modules (saas/) are copied as a directory, like coach/', () => {
+  const lines = read('Dockerfile').split('\n');
+  assert.ok(lines.some(l => /^COPY\s+saas\s+\.\/saas\s*$/.test(l)), 'api/Dockerfile copies saas/ (server.js imports saas/router.js)');
+  assert.match(read('server.js'), /from '\.\/saas\/router\.js'/);
+});

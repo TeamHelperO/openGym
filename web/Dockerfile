@@ -25,6 +25,14 @@ COPY frontend/ ./
 # cannot be answered from the phone. Unset, the app reports package.json's version as before.
 ARG APP_BUILD=""
 RUN APP_BUILD="$APP_BUILD" npm run build
+# Exercise stills and animations are licensed from Gym visual for openGym only (NOTICE.md); a
+# commercial fork needs its own licence. They go into the image only when the build says so:
+#   docker build --build-arg EXERCISE_MEDIA=on ...   (only with a licence of your own)
+# Without them the app shows the exercise names, muscles and instructions, and a plain tile
+# where the picture would be (components/Media.jsx handles the missing file).
+ARG EXERCISE_MEDIA=off
+COPY catalogue/media/ /tmp/exercise-media/
+RUN if [ "$EXERCISE_MEDIA" = "on" ]; then cp -R /tmp/exercise-media dist/exercise-media; fi
 
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine
 # Same reason as in api/Dockerfile: alpine fixes land faster than the nginx image is rebuilt.
@@ -58,12 +66,10 @@ ARG VERSION=dev
 ARG VCS_REF=dev
 ARG BUILD_DATE=unknown
 
-LABEL maintainer="Duarte Santos https://github.com/DuarteSantos8" \
-    org.opencontainers.image.title="opengym-web" \
-    org.opencontainers.image.description="Frontend for Self-hosted gym & body-weight tracker — plan routines, log workouts (supersets & cardio too), track your weight and progress, passkey login. Your data, your server." \
-    org.opencontainers.image.source="https://github.com/DuarteSantos8/openGym" \
-    org.opencontainers.image.url="https://opengym.ch" \
-    org.opencontainers.image.documentation="https://github.com/DuarteSantos8/openGym#readme" \
+LABEL org.opencontainers.image.title="fithub-web" \
+    org.opencontainers.image.description="Frontend da plataforma de gestão de academias FitHub (baseada no openGym)" \
+    org.opencontainers.image.source="https://github.com/TeamHelperO/openGym" \
+    org.opencontainers.image.documentation="https://github.com/TeamHelperO/openGym#readme" \
     org.opencontainers.image.licenses="AGPL-3.0-or-later" \
     org.opencontainers.image.version=$VERSION \
     org.opencontainers.image.revision=$VCS_REF \
@@ -77,7 +83,6 @@ COPY --chmod=755 web/05-check-base-path.sh /docker-entrypoint.d/
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 # The exercise stills and animations, 180 px, licensed from Gym visual for openGym only: see
 # catalogue/media/NOTICE.md. They ship inside the image; nothing is downloaded at start-up.
-COPY catalogue/media/ /usr/share/nginx/html/exercise-media/
 
 # Set Default ENVs for nginx
 ENV NGINX_PORT=80

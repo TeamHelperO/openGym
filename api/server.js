@@ -16,6 +16,7 @@ import webpush from 'web-push';
 import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
+import { createSaas } from './saas/router.js';
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
 import { dayReminderPush, nudgePush, restTimerPush, testPush } from './push-messages.js';
@@ -2921,6 +2922,11 @@ const routes = {
   ...(MEDIA_ON ? mediaRoutes : {})
 };
 
+/* ---------- SaaS: academies, people, training, finance, supplies, shop ---------- */
+// Parameterised paths under /api/saas/ (saas/router.js), matched after the flat table above.
+// They go through the same origin check and error handling as every other route.
+const saas = createSaas({ json, readBody, readSession, isAdmin, users: () => db.users, readState, dataDir: DATA });
+
 /* ---------- Coach: boot recovery, notifications, scheduled reviews ---------- */
 // A job that was running when the process died is not coming back; say so rather than leaving
 // a spinner that never resolves.
@@ -3004,7 +3010,11 @@ const server = http.createServer(async (req, res) => {
   // above stays a plain lookup, and so csrfOk and the catch-all see one name for every file.
   const mm = /^\/api\/media\/([0-9a-f]{64})$/.exec(url.pathname);
   if (mm) { key = req.method + ' /api/media/{hash}'; req.mediaHash = mm[1]; }
-  const handler = routes[key];
+  let handler = routes[key];
+  if (!handler) {
+    const saasHandler = saas.match(req.method, url.pathname);
+    if (saasHandler) { key = req.method + ' /api/saas/*'; handler = (rq, rs) => saasHandler(rq, rs, url); }
+  }
   if (!handler) return json(res, 404, { error: 'not found' });
   if (!csrfOk(req, key)) {
     // A Bearer that does not verify and no cookie beside it: nothing ambient is in play, the caller
